@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nöbet Listesi Paneli</title>
+<style>
+  :root{
+    --bg:#f1f3f7; --panel:#fff; --line:#dfe3ea; --text:#1d2433; --muted:#6b7385;
+    --primary:#2563eb; --danger:#dc2626; --ok:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;color:var(--text)}
+  button:hover{border-color:#b9c1cf}
+  button.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  button.danger{color:var(--danger)}
+  button.sm{padding:3px 8px;font-size:12px}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fff;color:var(--text)}
+  input:focus,select:focus,textarea:focus{outline:2px solid #bfd3fe;border-color:var(--primary)}
+
+  .topbar{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .topbar h1{font-size:16px;margin:0 12px 0 0}
+  .topbar .sp{flex:1}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:16px;padding:16px;align-items:start}
+  .side{position:sticky;top:70px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 86px);overflow:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .card h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+  .hint b{color:var(--text)}
+
+  .howto ol{margin:0;padding-left:20px;font-size:13px;line-height:1.6}
+  .palette{display:flex;flex-direction:column;gap:4px}
+  .chip{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;user-select:none;background:#fff}
+  .chip:hover{border-color:#b9c1cf}
+  .chip.active{outline:2px solid var(--primary);border-color:var(--primary);background:#eef4ff}
+  .chip .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .chip .nm{flex:1;font-weight:600;font-size:13px}
+  .chip .key{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+  .chip .act{display:none;gap:2px}
+  .chip:hover .act{display:flex}
+  .chip .act span{font-size:12px;padding:0 4px;color:var(--muted);border-radius:4px}
+  .chip .act span:hover{background:#eee;color:var(--text)}
+  .chip.erase .dot{background:repeating-linear-gradient(45deg,#ddd 0 3px,#fff 3px 6px);border:1px solid #bbb}
+  .addrow{display:flex;gap:6px;margin-top:8px}
+  .addrow input{flex:1;min-width:0}
+
+  table.sum{width:100%;border-collapse:collapse;font-size:12px}
+  table.sum th,table.sum td{padding:4px 5px;border-bottom:1px solid var(--line);text-align:right}
+  table.sum th:first-child,table.sum td:first-child{text-align:left}
+  table.sum th{color:var(--muted);font-weight:600}
+
+  .main{overflow:auto}
+  .sheet{background:#fff;width:210mm;min-height:297mm;margin:0 auto;padding:10mm 10mm 8mm;box-shadow:0 4px 24px rgba(0,0,0,.08);color:#000}
+  table.grid{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9.5pt}
+  table.grid td,table.grid th{border:1px solid #000;padding:1px 4px;height:6.1mm;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  table.grid .logo{height:auto;padding:4px}
+  table.grid .logo img{max-width:100%;max-height:22mm;display:block;margin:0 auto}
+  table.grid .logo .inst{font-size:7pt;white-space:normal;line-height:1.2}
+  table.grid .title{font-size:13pt;font-weight:700;height:12mm;white-space:normal}
+  table.grid .title small{display:block;font-size:8pt;font-weight:600;margin-bottom:2px}
+  table.grid .subtitle{font-size:9pt;font-weight:600}
+  table.grid thead .colh th{font-weight:700;font-size:9pt}
+  table.grid td.sn{font-size:8.5pt}
+  table.grid td.date{text-align:left;font-size:8.5pt}
+  table.grid td.cell{font-weight:600;font-size:8.5pt;cursor:pointer;user-select:none}
+  table.grid td.cell .tm{font-weight:400;font-size:7.5pt}
+  table.grid td.cell.multi{white-space:normal;font-size:7.5pt;line-height:1.15}
+  table.grid tr.we td{background:#ececec;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .note{margin-top:4mm;font-size:9pt;white-space:pre-wrap}
+  .sigs{display:flex;justify-content:space-between;margin-top:6mm;font-size:9pt;text-align:center}
+  .sigs > div{flex:1;padding:0 4mm}
+  .sigs .t{font-weight:700}
+  .sigs .n{margin-top:1.5mm}
+  .sigs .space{height:18mm}
+
+  @media screen{
+    table.grid td.cell:hover{outline:2px solid var(--primary);outline-offset:-2px}
+    table.grid td.cell.empty{background:repeating-linear-gradient(45deg,#fff 0 6px,#fff1f1 6px 12px)}
+    table.grid td.cell .p{background:color-mix(in srgb,var(--c) 22%,white);border-radius:4px;padding:0 3px}
+    table.grid td.cell.custom{box-shadow:inset 0 0 0 2px #f59e0b}
+  }
+
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:50;overflow:auto}
+  .modal.hidden{display:none}
+  .box{background:#fff;border-radius:14px;width:min(640px,100%);padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .box h2{margin:0 0 12px;font-size:17px}
+  .box .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .box .foot .sp{flex:1}
+  .frow{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .frow label{min-width:140px;color:var(--muted);font-size:13px}
+  .frow input[type=text],.frow textarea{flex:1;min-width:180px}
+  .sec{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+  .sec h4{margin:0 0 8px;font-size:13px}
+  .order{display:flex;flex-wrap:wrap;gap:4px;min-height:30px;padding:4px;border:1px dashed var(--line);border-radius:8px;flex:1}
+  .order .o{background:#eef4ff;border:1px solid #c7d7fe;border-radius:6px;padding:2px 6px;font-size:12px;cursor:pointer}
+  .order .o:hover{background:#fee2e2;border-color:#fca5a5;text-decoration:line-through}
+  .quick{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+  .quick button{font-size:12px;padding:3px 8px}
+
+  .box.wide{width:min(1150px,100%)}
+  .ai{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+  .ai textarea{width:100%;min-height:92px;resize:vertical;font-size:14px}
+  .ai .btns{display:flex;flex-direction:column;gap:6px}
+  .ailog{grid-column:1/-1;font-size:13px;display:flex;flex-direction:column;gap:3px}
+  .ailog div{padding:4px 8px;border-radius:6px;background:#f0fdf4;color:#166534}
+  .ailog div.err{background:#fef2f2;color:#991b1b}
+  .ailog div.info{background:#eff6ff;color:#1e40af}
+  .step{display:flex;gap:12px;border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+  .step .no{flex:none;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .step .body{flex:1;min-width:0}
+  .step h4{margin:3px 0 4px;font-size:15px}
+  .step .hint{margin:0 0 8px}
+  button.big{font-size:16px;padding:10px 22px}
+  .rulebox{margin-top:10px;font-size:13px}
+  .rulebox summary{cursor:pointer;color:var(--muted);margin-bottom:8px}
+  .totals{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin-bottom:8px}
+  .totals b{font-size:15px}
+  table.plan{width:100%;border-collapse:collapse;font-size:13px}
+  table.plan th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:4px;border-bottom:1px solid var(--line)}
+  table.plan td{padding:4px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.plan tr.off td{opacity:.45}
+  table.plan input.tg{width:70px}
+  table.plan input.lv{width:150px}
+  table.plan .cc{display:flex;gap:6px;font-size:12px;white-space:nowrap}
+  .badge{display:inline-block;font-size:11px;padding:1px 6px;border-radius:5px;margin:1px;background:#eef4ff;border:1px solid #c7d7fe;cursor:pointer}
+  .badge.blk{background:#fff7ed;border-color:#fed7aa}
+  .badge:hover{text-decoration:line-through}
+  .rules{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;align-items:center}
+  .rules input[type=number]{width:64px}
+  .report{margin-top:12px}
+  .report table{border-collapse:collapse;font-size:13px}
+  .report td,.report th{padding:3px 10px;border-bottom:1px solid var(--line);text-align:right}
+  .report td:first-child,.report th:first-child{text-align:left}
+  .good{color:var(--ok)} .bad{color:var(--danger)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+  .toast.show{opacity:1}
+
+  @page{size:A4 portrait;margin:8mm}
+  @media print{
+    body{background:#fff}
+    .topbar,.side,.modal,.toast{display:none!important}
+    .layout{display:block;padding:0}
+    .sheet{box-shadow:none;width:auto;min-height:0;padding:0;margin:0}
+    .print-summary{break-before:page}
+  }
+  .print-summary{display:none}
+  @media print{ .print-summary.on{display:block} }
+  .print-summary h3{text-align:center;font-size:12pt}
+  .print-summary table{width:100%;border-collapse:collapse;font-size:10pt}
+  .print-summary th,.print-summary td{border:1px solid #000;padding:3px 6px;text-align:center}
+  .print-summary td:first-child{text-align:left}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Nöbet Listesi</h1>
+  <button id="prevM" title="Önceki ay">◀</button>
+  <input type="month" id="month">
+  <button id="nextM" title="Sonraki ay">▶</button>
+  <button id="btnPlan" class="primary">📅 Akıllı Planla</button>
+  <button id="btnAuto">⚡ Sıralı Doldur</button>
+  <button id="btnCopyPrev">Önceki Ayı Kopyala</button>
+  <button id="btnUndo" title="Ctrl/Cmd + Z">↶ Geri Al</button>
+  <button id="btnClear" class="danger">Ayı Temizle</button>
+  <span class="sp"></span>
+  <button id="btnSettings">⚙ Ayarlar</button>
+  <button id="btnExport" title="Yedek dosyası indir">Yedekle</button>
+  <button id="btnImport" title="Yedek dosyası yükle">Yükle</button>
+  <input type="file" id="importFile" accept=".json" hidden>
+  <button id="btnPrint" class="primary">🖨 Yazdır / PDF</button>
+</div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="card howto">
+      <h3>Nasıl kullanılır?</h3>
+      <ol>
+        <li>Üstten <b>ayı</b> seç.</li>
+        <li><b>📅 Akıllı Planla</b>'ya bas, izinleri yaz, <b>Listeyi Oluştur</b>'a bas.</li>
+        <li>Değiştirmek istediğin yer için aşağıdan <b>kişiyi seç</b>, tablodaki <b>hücreye tıkla</b>.</li>
+        <li><b>🖨 Yazdır / PDF</b>'e bas.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Personel</h3>
+      <div class="palette" id="palette"></div>
+      <div class="addrow">
+        <input type="text" id="newStaff" placeholder="Ad Soyad (virgülle birden fazla)">
+        <button id="addStaff">Ekle</button>
+      </div>
+      <div class="hint">
+        • Kişiye tıkla, sonra tablodaki hücreye tıkla.<br>
+        • Bir hücreye iki kişi yazmak için <b>Shift</b>'e basılı tutup tıkla.<br>
+        • Yarım gün, özel saat gibi durumlar için hücreye <b>sağ tıkla</b>.<br>
+        • Silmek için <b>Silgi</b>'yi seç, hücreye tıkla.
+      </div>
+    </div>
+    <div class="card">
+      <h3>Aylık Özet</h3>
+      <div id="summary"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="sheet" id="sheet"></div>
+    <div class="print-summary" id="printSummary"></div>
+  </main>
+</div>
+
+<div class="modal hidden" id="modal"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'nobetPanel_v1';
+const DAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9'];
+const up = s => (s || '').toLocaleUpperCase('tr-TR').trim();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const $ = id => document.getElementById(id);
+
+function defaults() {
+  const names = [];
+  const now = new Date();
+  return {
+    cur: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
+    settings: {
+      institution: 'AKDAĞMADENİ ŞEHİT SİNAN BABACAN DEVLET HASTANESİ',
+      title: 'ACİL SERVİS SEKRETER NÖBET LİSTESİ',
+      subtitle: 'ACİL SERVİS NÖBET LİSTESİ',
+      columns: [{ start: '08:00', end: '16:00' }, { start: '16:00', end: '24:00' }, { start: '24:00', end: '08:00' }],
+      signatures: [
+        { title: 'İDARİ VE MALİ İŞLER MÜDÜRÜ', name: '' },
+        { title: 'BAŞHEKİM', name: '' },
+        { title: 'BAŞHEKİM YARDIMCISI', name: '' },
+      ],
+      note: '',
+      logo: '',
+      shadeWeekend: true,
+      printSummary: false,
+      rotation: [],
+    },
+    staff: names.map((n, i) => ({ id: uid(), name: n, color: COLORS[i % COLORS.length] })),
+    months: {},
+  };
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw), def = defaults();
+      d.settings = { ...def.settings, ...d.settings };
+      d.months ||= {}; d.staff ||= []; d.cur ||= def.cur;
+      return d;
+    }
+  } catch (e) { console.error(e); }
+  return defaults();
+}
+let S = load();
+const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(S));
+
+let brush = null;
+const history = [];
+
+const cols = () => S.settings.columns;
+const colLabel = c => `${c.start}-${c.end}`;
+const staffById = id => S.staff.find(s => s.id === id);
+const ym = (k = S.cur) => k.split('-').map(Number);
+const daysIn = (k = S.cur) => { const [y, m] = ym(k); return new Date(y, m, 0).getDate(); };
+const dateOf = (d, k = S.cur) => { const [y, m] = ym(k); return new Date(y, m - 1, d + 1); };
+
+function getMonth(k = S.cur) {
+  const n = daysIn(k);
+  const M = S.months[k] ||= [];
+  while (M.length < n) M.push([]);
+  M.length = n;
+  for (const row of M) while (row.length < cols().length) row.push([]);
+  return M;
+}
+
+function minutes(t) { const [h, m] = (t || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); }
+function duration(a, b) {
+  let x = minutes(a) % 1440, y = minutes(b);
+  let d = y - x;
+  if (d <= 0) d += 1440;
+  return d / 60;
+}
+
+function snapshot() {
+  history.push({ k: S.cur, data: JSON.stringify(S.months[S.cur] || []) });
+  if (history.length > 80) history.shift();
+}
+function undo() {
+  const h = history.pop();
+  if (!h) return toast('Geri alınacak işlem yok');
+  S.months[h.k] = JSON.parse(h.data);
+  S.cur = h.k;
+  save(); renderAll();
+}
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- Rendering ---------- */
+function cellHTML(cell, ci) {
+  const col = cols()[ci];
+  return cell.map(a => {
+    const s = staffById(a.s);
+    if (!s) return '';
+    const custom = a.a && a.b && (a.a !== col.start || a.b !== col.end);
+    return `<span class="p" style="--c:${s.color}">${esc(s.name)}${custom ? ` <span class="tm">(${esc(a.a)}-${esc(a.b)})</span>` : ''}</span>`;
+  }).filter(Boolean).join('-');
+}
+function cellClass(cell, ci) {
+  const col = cols()[ci];
+  const valid = cell.filter(a => staffById(a.s));
+  const custom = valid.some(a => a.a && a.b && (a.a !== col.start || a.b !== col.end));
+  return 'cell' + (valid.length ? '' : ' empty') + (valid.length > 1 ? ' multi' : '') + (custom ? ' custom' : '');
+}
+
+function renderSheet() {
+  const st = S.settings, M = getMonth(), C = cols();
+  const logo = st.logo ? `<img src="${st.logo}" alt="">` : `<div class="inst">${esc(st.institution)}</div>`;
+  let rows = '';
+  M.forEach((row, d) => {
+    const dt = dateOf(d), wd = dt.getDay();
+    const we = st.shadeWeekend && (wd === 0 || wd === 6);
+    const ds = `${String(dt.getDate()).padStart(2, '0')}.${String(dt.getMonth() + 1).padStart(2, '0')}.${dt.getFullYear()} ${DAYS[wd]},`;
+    rows += `<tr class="${we ? 'we' : ''}"><td class="sn">${d + 1}</td><td class="date">${ds}</td>` +
+      C.map((_, c) => `<td class="${cellClass(row[c], c)}" data-d="${d}" data-c="${c}">${cellHTML(row[c], c)}</td>`).join('') + '</tr>';
+  });
+  const sigs = st.signatures.filter(s => s.title || s.name).map(s =>
+    `<div><div class="t">${esc(s.title)}</div><div class="space"></div><div class="n">${esc(s.name)}</div></div>`).join('');
+  $('sheet').innerHTML = `
+    <table class="grid">
+      <colgroup><col style="width:8mm"><col style="width:42mm">${C.map(() => '<col>').join('')}</colgroup>
+      <thead>
+        <tr><td class="logo" colspan="2" rowspan="2">${logo}</td>
+            <td class="title" colspan="${C.length}">${st.logo && st.institution ? `<small>${esc(st.institution)}</small>` : ''}${esc(st.title)}</td></tr>
+        <tr><td class="subtitle" colspan="${C.length}">${esc(st.subtitle)}</td></tr>
+        <tr class="colh"><th>SN</th><th>TARİH</th>${C.map(c => `<th>${esc(colLabel(c))}</th>`).join('')}</tr>
+      </thead>
+      <tbody id="gridBody">${rows}</tbody>
+    </table>
+    ${st.note ? `<div class="note">${esc(st.note)}</div>` : ''}
+    <div class="sigs">${sigs}</div>`;
+}
+
+function updateCell(d, c) {
+  const td = document.querySelector(`td.cell[data-d="${d}"][data-c="${c}"]`);
+  if (!td) return;
+  const cell = getMonth()[d][c];
+  td.className = cellClass(cell, c);
+  td.innerHTML = cellHTML(cell, c);
+}
+
+function renderPalette() {
+  const items = S.staff.map((s, i) => `
+    <div class="chip ${brush === s.id ? 'active' : ''}" data-id="${s.id}">
+      <span class="dot" style="background:${s.color}"></span>
+      <span class="nm">${esc(s.name)}</span>
+      <span class="act"><span data-act="ren" title="Yeniden adlandır">✎</span><span data-act="col" title="Renk değiştir">●</span><span data-act="del" title="Sil">✕</span></span>
+      ${i < 9 ? `<span class="key">${i + 1}</span>` : ''}
+    </div>`).join('');
+  $('palette').innerHTML = (S.staff.length ? '' : '<div class="hint" style="margin:0 0 6px">Henüz personel yok. Aşağıdaki kutuya ad soyad yazıp <b>Ekle</b>\'ye bas.</div>') + items + `
+    <div class="chip erase ${brush === 'erase' ? 'active' : ''}" data-id="erase">
+      <span class="dot"></span><span class="nm">Silgi</span><span class="key">0</span>
+    </div>`;
+}
+
+function computeStats(k = S.cur) {
+  const M = getMonth(k), C = cols();
+  const stats = new Map(S.staff.map(s => [s.id, { n: 0, h: 0, we: 0, days: new Set() }]));
+  let empty = 0;
+  M.forEach((row, d) => {
+    const wd = dateOf(d, k).getDay();
+    C.forEach((col, c) => {
+      const cell = (row[c] || []).filter(a => stats.has(a.s));
+      if (!cell.length) empty++;
+      cell.forEach(a => {
+        const x = stats.get(a.s);
+        x.n++; x.h += duration(a.a || col.start, a.b || col.end); x.days.add(d);
+        if (wd === 0 || wd === 6) x.we++;
+      });
+    });
+  });
+  return { stats, empty };
+}
+
+function renderSummary() {
+  const { stats, empty } = computeStats();
+  const fmt = h => (Math.round(h * 10) / 10).toString().replace('.', ',');
+  const rows = S.staff.map(s => ({ s, x: stats.get(s.id) })).filter(r => r.x.n).sort((a, b) => b.x.h - a.x.h);
+  const total = rows.reduce((t, r) => t + r.x.h, 0);
+  const tgt = S.plans?.[S.cur] ? computeTargets().tgt : null;
+  const tcell = r => {
+    if (!tgt || tgt[r.s.id] === undefined) return tgt ? '<td>–</td>' : '';
+    const d = r.x.h - tgt[r.s.id];
+    return `<td style="color:${Math.abs(d) <= 8 ? 'var(--ok)' : 'var(--danger)'}">${Math.round(tgt[r.s.id])}</td>`;
+  };
+  $('summary').innerHTML = (rows.length ? `
+    <table class="sum">
+      <tr><th>Personel</th><th>Gün</th><th>H.S.</th><th>Saat</th>${tgt ? '<th>Hedef</th>' : ''}</tr>
+      ${rows.map(r => `<tr><td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.s.color}"></span> ${esc(r.s.name)}</td><td>${r.x.days.size}</td><td>${r.x.we}</td><td><b>${fmt(r.x.h)}</b></td>${tcell(r)}</tr>`).join('')}
+      <tr><td><b>Toplam</b></td><td></td><td></td><td><b>${fmt(total)}</b></td>${tgt ? '<td></td>' : ''}</tr>
+    </table>` : '<div class="hint">Henüz atama yok.</div>') +
+    `<div class="hint">${empty ? `<b style="color:var(--danger)">${empty}</b> boş vardiya var (taralı hücreler).` : '<b style="color:var(--ok)">Tüm vardiyalar dolu ✓</b>'}</div>`;
+
+  const ps = $('printSummary');
+  ps.classList.toggle('on', !!S.settings.printSummary);
+  const [y, m] = ym();
+  ps.innerHTML = `<h3>${esc(S.settings.title)} – ${String(m).padStart(2, '0')}.${y} ÖZET</h3>
+    <table><tr><th>Personel</th><th>Vardiya Sayısı</th><th>Nöbet Günü</th><th>Hafta Sonu</th><th>Toplam Saat</th></tr>
+    ${rows.map(r => `<tr><td>${esc(r.s.name)}</td><td>${r.x.n}</td><td>${r.x.days.size}</td><td>${r.x.we}</td><td>${fmt(r.x.h)}</td></tr>`).join('')}</table>`;
+}
+
+function renderAll() {
+  $('month').value = S.cur;
+  renderPalette(); renderSheet(); renderSummary();
+}
+
+/* ---------- Painting ---------- */
+function applyBrush(d, c, add) {
+  const M = getMonth();
+  const cell = M[d][c];
+  if (brush === 'erase') {
+    if (!cell.length) return false;
+    M[d][c] = [];
+  } else if (add) {
+    const i = cell.findIndex(a => a.s === brush);
+    if (i >= 0) cell.splice(i, 1); else cell.push({ s: brush });
+  } else {
+    if (cell.length === 1 && cell[0].s === brush && !cell[0].a) return false;
+    M[d][c] = [{ s: brush }];
+  }
+  return true;
+}
+
+let painting = false, paintAdd = false, paintedAny = false;
+document.addEventListener('mousedown', e => {
+  const td = e.target.closest('td.cell');
+  if (!td || e.button !== 0) return;
+  e.preventDefault();
+  const d = +td.dataset.d, c = +td.dataset.c;
+  if (!brush) return openCellEditor(d, c);
+  snapshot();
+  painting = true; paintAdd = e.shiftKey || e.metaKey || e.ctrlKey; paintedAny = false;
+  if (applyBrush(d, c, paintAdd)) { paintedAny = true; updateCell(d, c); }
+});
+document.addEventListener('mouseover', e => {
+  if (!painting || paintAdd) return;
+  const td = e.target.closest('td.cell');
+  if (!td) return;
+  const d = +td.dataset.d, c = +td.dataset.c;
+  if (applyBrush(d, c, false)) { paintedAny = true; updateCell(d, c); }
+});
+document.addEventListener('mouseup', () => {
+  if (!painting) return;
+  painting = false;
+  if (paintedAny) { save(); renderSummary(); } else history.pop();
+});
+document.addEventListener('contextmenu', e => {
+  const td = e.target.closest('td.cell');
+  if (!td) return;
+  e.preventDefault();
+  openCellEditor(+td.dataset.d, +td.dataset.c);
+});
+
+/* ---------- Modal helpers ---------- */
+function openModal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').classList.remove('hidden'); }
+function closeModal() { $('modal').classList.add('hidden'); $('modalBox').innerHTML = ''; $('modalBox').classList.remove('wide'); }
+$('modal').addEventListener('mousedown', e => { if (e.target.id === 'modal') closeModal(); });
+
+/* ---------- Cell editor ---------- */
+function openCellEditor(d, c) {
+  const col = cols()[c], dt = dateOf(d);
+  let work = getMonth()[d][c].filter(a => staffById(a.s)).map(a => ({ ...a }));
+  const staffOpts = sel => S.staff.map(s => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+
+  const draw = () => {
+    openModal(`
+      <h2>${dt.toLocaleDateString('tr-TR')} ${DAYS[dt.getDay()]} · ${esc(colLabel(col))}</h2>
+      <div id="ceRows">
+        ${work.length ? work.map((a, i) => `
+          <div class="frow">
+            <select data-i="${i}" data-f="s" style="flex:1">${staffOpts(a.s)}</select>
+            <input type="time" data-i="${i}" data-f="a" value="${a.a || (col.start === '24:00' ? '00:00' : col.start)}" title="Başlangıç">
+            <span>–</span>
+            <input type="time" data-i="${i}" data-f="b" value="${a.b || (col.end === '24:00' ? '00:00' : col.end)}" title="Bitiş">
+            <button class="sm danger" data-rm="${i}">Kaldır</button>
+          </div>`).join('') : '<div class="hint">Bu vardiyada kimse yok.</div>'}
+      </div>
+      <div class="hint">Saatleri değiştirirsen çıktıda isim yanında parantez içinde yazar, özet saatleri buna göre hesaplanır. (Örn. izin alıp 12:00'de çıkan kişi için bitişi 12:00 yap, kalan kısma başka birini ekle.)</div>
+      <div class="quick">${S.staff.map(s => `<button data-add="${s.id}">+ ${esc(s.name)}</button>`).join('')}</div>
+      <div class="foot">
+        <button class="danger" id="ceClear">Hücreyi Boşalt</button>
+        <span class="sp"></span>
+        <button id="ceCancel">İptal</button>
+        <button class="primary" id="ceSave">Kaydet</button>
+      </div>`);
+    const box = $('modalBox');
+    box.querySelectorAll('[data-f]').forEach(el => el.addEventListener('change', () => {
+      const a = work[+el.dataset.i];
+      let v = el.value;
+      if (el.dataset.f === 'b' && v === '00:00') v = '24:00';
+      if (el.dataset.f === 'a' && v === '00:00' && col.start === '24:00') v = '24:00';
+      a[el.dataset.f] = v;
+    }));
+    box.querySelectorAll('[data-rm]').forEach(el => el.onclick = () => { work.splice(+el.dataset.rm, 1); draw(); });
+    box.querySelectorAll('[data-add]').forEach(el => el.onclick = () => { work.push({ s: el.dataset.add }); draw(); });
+    $('ceClear').onclick = () => { work = []; draw(); };
+    $('ceCancel').onclick = closeModal;
+    $('ceSave').onclick = () => {
+      snapshot();
+      getMonth()[d][c] = work.map(a => {
+        const o = { s: a.s }, aa = a.a || col.start, bb = a.b || col.end;
+        if (aa !== col.start || bb !== col.end) { o.a = aa; o.b = bb; }
+        return o;
+      });
+      save(); closeModal(); updateCell(d, c); renderSummary();
+    };
+  };
+  draw();
+}
+
+/* ---------- Staff management ---------- */
+$('palette').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  const id = chip.dataset.id, act = e.target.dataset.act;
+  const s = staffById(id);
+  if (act === 'ren') {
+    const n = prompt('Yeni ad soyad:', s.name);
+    if (n && up(n)) { s.name = up(n); save(); renderAll(); }
+    return;
+  }
+  if (act === 'col') {
+    s.color = COLORS[(COLORS.indexOf(s.color) + 1) % COLORS.length];
+    save(); renderAll(); return;
+  }
+  if (act === 'del') {
+    const used = Object.values(S.months).some(M => M.some(r => r.some(cell => cell.some(a => a.s === id))));
+    if (!confirm(`${s.name} silinsin mi?${used ? '\n\nUYARI: Bu kişi listelerde atanmış, o hücreler boşalacak.' : ''}`)) return;
+    S.staff = S.staff.filter(x => x.id !== id);
+    if (brush === id) brush = null;
+    save(); renderAll(); return;
+  }
+  brush = brush === id ? null : id;
+  renderPalette();
+});
+function addStaff() {
+  const names = $('newStaff').value.split(',').map(up).filter(Boolean);
+  if (!names.length) return;
+  const fresh = names.filter(n => !S.staff.some(s => s.name === n));
+  if (!fresh.length) return toast('Bu isim zaten var');
+  fresh.forEach(n => S.staff.push({ id: uid(), name: n, color: COLORS[S.staff.length % COLORS.length] }));
+  $('newStaff').value = '';
+  save(); renderPalette();
+}
+$('addStaff').onclick = addStaff;
+$('newStaff').addEventListener('keydown', e => { if (e.key === 'Enter') addStaff(); });
+
+/* ---------- Keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,select')) return;
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); return undo(); }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); return doPrint(); }
+  if (e.key === 'Escape') { if (!$('modal').classList.contains('hidden')) return closeModal(); brush = null; return renderPalette(); }
+  if (!$('modal').classList.contains('hidden')) return;
+  if (e.key === '0') { brush = 'erase'; return renderPalette(); }
+  if (/^[1-9]$/.test(e.key)) {
+    const s = S.staff[+e.key - 1];
+    if (s) { brush = s.id; renderPalette(); }
+  }
+});
+
+/* ---------- Month navigation ---------- */
+function shiftMonth(k, delta) {
+  const [y, m] = ym(k);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+$('month').addEventListener('change', e => { if (e.target.value) { S.cur = e.target.value; save(); renderAll(); } });
+$('prevM').onclick = () => { S.cur = shiftMonth(S.cur, -1); save(); renderAll(); };
+$('nextM').onclick = () => { S.cur = shiftMonth(S.cur, 1); save(); renderAll(); };
+
+$('btnUndo').onclick = undo;
+$('btnClear').onclick = () => {
+  if (!confirm('Bu ayın tüm atamaları silinsin mi? (Geri Al ile geri getirebilirsin)')) return;
+  snapshot(); S.months[S.cur] = []; save(); renderAll();
+};
+$('btnCopyPrev').onclick = () => {
+  const pk = shiftMonth(S.cur, -1);
+  const P = S.months[pk];
+  if (!P || !P.some(r => r.some(c => c.length))) return toast('Önceki ayda veri yok');
+  const mode = prompt('Önceki aydan nasıl kopyalansın?\n\n1 = Aynı gün numarasına (1→1, 2→2…)\n2 = Haftanın aynı gününe (ilk pazartesi → ilk pazartesi…)', '2');
+  if (!mode) return;
+  snapshot();
+  const M = getMonth(), PM = getMonth(pk);
+  M.forEach((row, d) => {
+    let src = d;
+    if (mode.trim() === '2') {
+      const wd = dateOf(d).getDay();
+      const firstPrev = PM.findIndex((_, i) => dateOf(i, pk).getDay() === wd);
+      src = firstPrev + Math.floor(d / 7) * 7;
+      if (src >= PM.length) src -= 7;
+    }
+    if (src < 0 || !PM[src]) return;
+    cols().forEach((_, c) => { row[c] = JSON.parse(JSON.stringify(PM[src][c] || [])); });
+  });
+  save(); renderAll(); toast('Önceki ay kopyalandı');
+};
+
+/* ---------- Auto fill ---------- */
+$('btnAuto').onclick = () => {
+  const st = S.settings, C = cols();
+  let rot = C.map((_, i) => (st.rotation[i] || []).filter(id => staffById(id)));
+  const draw = () => {
+    openModal(`
+      <h2>⚡ Otomatik Doldur (sıralı döngü)</h2>
+      <div class="hint" style="margin-top:0">Her vardiya için kişileri sırayla ekle; günler bu sıraya göre döner. Örn. 3 kişi eklersen 1. gün A, 2. gün B, 3. gün C, 4. gün yine A… Değişiklikleri (izin, fazla nöbet) sonra fırçayla düzeltirsin.</div>
+      ${C.map((c, i) => `
+        <div class="sec">
+          <h4>${esc(colLabel(c))}</h4>
+          <div class="frow">
+            <div class="order">${rot[i].map((id, j) => `<span class="o" data-c="${i}" data-j="${j}" title="Kaldırmak için tıkla">${j + 1}. ${esc(staffById(id).name)}</span>`).join('') || '<span class="hint" style="margin:4px">Boş – aşağıdan ekle</span>'}</div>
+          </div>
+          <div class="frow">
+            <select data-addc="${i}"><option value="">+ Kişi ekle…</option>${S.staff.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+            ${i > 0 ? `<button class="sm" data-same="${i}">Üstteki ile aynı yap</button>` : ''}
+            <button class="sm" data-clr="${i}">Temizle</button>
+          </div>
+        </div>`).join('')}
+      <div class="sec">
+        <div class="frow"><label>Başlangıç günü</label><input type="number" id="afStart" min="1" max="${daysIn()}" value="1" style="width:80px"></div>
+        <div class="frow"><label>Sadece boşları doldur</label><input type="checkbox" id="afOnlyEmpty" checked></div>
+      </div>
+      <div class="foot"><button id="afCancel">İptal</button><button class="primary" id="afRun">Doldur</button></div>`);
+    const box = $('modalBox');
+    box.querySelectorAll('.o').forEach(el => el.onclick = () => { rot[+el.dataset.c].splice(+el.dataset.j, 1); draw(); });
+    box.querySelectorAll('[data-addc]').forEach(el => el.onchange = () => { if (el.value) { rot[+el.dataset.addc].push(el.value); draw(); } });
+    box.querySelectorAll('[data-same]').forEach(el => el.onclick = () => { const i = +el.dataset.same; rot[i] = [...rot[i - 1]]; draw(); });
+    box.querySelectorAll('[data-clr]').forEach(el => el.onclick = () => { rot[+el.dataset.clr] = []; draw(); });
+    $('afCancel').onclick = closeModal;
+    $('afRun').onclick = () => {
+      const start = Math.max(1, +$('afStart').value || 1) - 1;
+      const onlyEmpty = $('afOnlyEmpty').checked;
+      st.rotation = rot;
+      snapshot();
+      const M = getMonth();
+      for (let d = start; d < M.length; d++) {
+        C.forEach((_, c) => {
+          const list = rot[c];
+          if (!list.length) return;
+          if (onlyEmpty && M[d][c].some(a => staffById(a.s))) return;
+          M[d][c] = [{ s: list[(d - start) % list.length] }];
+        });
+      }
+      save(); closeModal(); renderAll(); toast('Liste dolduruldu');
+    };
+  };
+  draw();
+};
+
+/* ---------- Settings ---------- */
+$('btnSettings').onclick = () => {
+  const st = S.settings;
+  const w = JSON.parse(JSON.stringify({ columns: st.columns, signatures: st.signatures }));
+  const draw = () => {
+    openModal(`
+      <h2>⚙ Ayarlar</h2>
+      <div class="frow"><label>Kurum adı</label><input type="text" id="stInst" value="${esc(st.institution)}"></div>
+      <div class="frow"><label>Başlık</label><input type="text" id="stTitle" value="${esc(st.title)}"></div>
+      <div class="frow"><label>Alt başlık</label><input type="text" id="stSub" value="${esc(st.subtitle)}"></div>
+      <div class="frow"><label>Logo</label><input type="file" id="stLogo" accept="image/*">${st.logo ? `<img src="${st.logo}" style="height:36px"><button class="sm danger" id="stLogoRm">Kaldır</button>` : ''}</div>
+      <div class="sec">
+        <h4>Vardiya sütunları</h4>
+        ${w.columns.map((c, i) => `
+          <div class="frow">
+            <input type="text" data-col="${i}" data-f="start" value="${esc(c.start)}" style="width:90px" placeholder="08:00">
+            <span>–</span>
+            <input type="text" data-col="${i}" data-f="end" value="${esc(c.end)}" style="width:90px" placeholder="16:00">
+            <span class="hint" style="margin:0">${duration(c.start, c.end)} saat</span>
+            ${w.columns.length > 1 ? `<button class="sm danger" data-colrm="${i}">Sil</button>` : ''}
+          </div>`).join('')}
+        <button class="sm" id="colAdd">+ Sütun ekle</button>
+      </div>
+      <div class="sec">
+        <h4>İmza alanları</h4>
+        ${w.signatures.map((s, i) => `
+          <div class="frow">
+            <input type="text" data-sig="${i}" data-f="title" value="${esc(s.title)}" placeholder="Unvan" style="flex:1">
+            <input type="text" data-sig="${i}" data-f="name" value="${esc(s.name)}" placeholder="Ad Soyad" style="flex:1">
+            <button class="sm danger" data-sigrm="${i}">Sil</button>
+          </div>`).join('')}
+        <button class="sm" id="sigAdd">+ İmza ekle</button>
+      </div>
+      <div class="sec">
+        <div class="frow"><label>Liste altı not</label><textarea id="stNote" rows="2" placeholder="Örn: Nöbet değişiklikleri sorumlu hekime bildirilmelidir.">${esc(st.note)}</textarea></div>
+        <div class="frow"><label>Hafta sonunu gölgele</label><input type="checkbox" id="stShade" ${st.shadeWeekend ? 'checked' : ''}></div>
+        <div class="frow"><label>Özeti 2. sayfa yazdır</label><input type="checkbox" id="stPS" ${st.printSummary ? 'checked' : ''}></div>
+      </div>
+      <div class="foot"><button id="stCancel">İptal</button><button class="primary" id="stSave">Kaydet</button></div>`);
+    const box = $('modalBox');
+    const keep = () => {
+      box.querySelectorAll('[data-col]').forEach(el => w.columns[+el.dataset.col][el.dataset.f] = el.value.trim());
+      box.querySelectorAll('[data-sig]').forEach(el => w.signatures[+el.dataset.sig][el.dataset.f] = up(el.value));
+      st.institution = up($('stInst').value); st.title = up($('stTitle').value); st.subtitle = up($('stSub').value);
+      st.note = $('stNote').value; st.shadeWeekend = $('stShade').checked; st.printSummary = $('stPS').checked;
+    };
+    box.querySelectorAll('[data-colrm]').forEach(el => el.onclick = () => { keep(); w.columns.splice(+el.dataset.colrm, 1); draw(); });
+    box.querySelectorAll('[data-sigrm]').forEach(el => el.onclick = () => { keep(); w.signatures.splice(+el.dataset.sigrm, 1); draw(); });
+    $('colAdd').onclick = () => { keep(); w.columns.push({ start: '08:00', end: '17:00' }); draw(); };
+    $('sigAdd').onclick = () => { keep(); w.signatures.push({ title: '', name: '' }); draw(); };
+    $('stLogo').onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { keep(); st.logo = r.result; draw(); };
+      r.readAsDataURL(f);
+    };
+    if ($('stLogoRm')) $('stLogoRm').onclick = () => { keep(); st.logo = ''; draw(); };
+    $('stCancel').onclick = () => { S = load(); closeModal(); renderAll(); };
+    $('stSave').onclick = () => {
+      keep();
+      const bad = w.columns.find(c => !/^\d{1,2}:\d{2}$/.test(c.start) || !/^\d{1,2}:\d{2}$/.test(c.end));
+      if (bad) return alert('Saatleri SS:DD biçiminde yaz (örn. 08:00, 24:00).');
+      st.columns = w.columns; st.signatures = w.signatures;
+      save(); closeModal(); renderAll(); toast('Ayarlar kaydedildi');
+    };
+  };
+  draw();
+};
+
+/* ---------- Export / Import ---------- */
+$('btnExport').onclick = () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `nobet-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+$('btnImport').onclick = () => $('importFile').click();
+$('importFile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.staff || !d.months) throw new Error('format');
+      if (!confirm('Mevcut verilerin yerine yedek yüklensin mi?')) return;      localStorage.setItem(STORE_KEY, JSON.stringify(d));
+      S = load(); history.length = 0; renderAll(); toast('Yedek yüklendi');
+    } catch { alert('Geçersiz yedek dosyası.'); }
+  };
+  r.readAsText(f); e.target.value = '';
+};
+
+/* ---------- Smart planning ---------- */
+const TRMAP = { 'ı': 'i', 'ş': 's', 'ğ': 'g', 'ü': 'u', 'ö': 'o', 'ç': 'c', 'â': 'a', 'î': 'i', 'û': 'u' };
+const norm = s => (s || '').toLocaleLowerCase('tr-TR').replace(/[ışğüöçâîû]/g, c => TRMAP[c]);
+const colKind = c => { const h = (minutes(c.start) / 60) % 24; return h >= 6 && h < 12 ? 'gunduz' : h >= 12 && h < 20 ? 'aksam' : 'gece'; };
+const KIND_NAME = { gunduz: 'Gündüz', aksam: 'Akşam', gece: 'Gece' };
+const colShort = c => KIND_NAME[colKind(cols()[c])] || colLabel(cols()[c]);
+const isWE = (d, k = S.cur) => [0, 6].includes(dateOf(d, k).getDay());
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+function getPlan(k = S.cur) {
+  S.plans ||= {};
+  const C = cols();
+  const P = S.plans[k] ||= { people: {}, rules: { link: [], minRest: 16, maxCont: 24, tol: 8, cont: true, keep: true } };
+  while (P.rules.link.length < C.length - 1) P.rules.link.push(false);
+  for (const s of S.staff) {
+    const p = P.people[s.id] ||= { active: true, target: '', leave: [], cols: C.map(() => true), fixed: [], block: [] };
+    p.block ||= [];
+    while (p.cols.length < C.length) p.cols.push(true);
+  }
+  return P;
+}
+
+function parseDays(str, n = daysIn()) {
+  const out = new Set();
+  for (const part of String(str).split(/[,\s]+/).filter(Boolean)) {
+    const m = part.match(/^(\d{1,2})(?:-(\d{1,2}))?$/);
+    if (!m) continue;
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) out.add(i);
+  }
+  return [...out].sort((a, b) => a - b);
+}
+function fmtDays(arr) {
+  const a = [...arr].sort((x, y) => x - y), out = [];
+  for (let i = 0; i < a.length; i++) {
+    let j = i;
+    while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++;
+    out.push(j > i ? `${a[i]}-${a[j]}` : `${a[i]}`);
+    i = j;
+  }
+  return out.join(', ');
+}
+
+const dayTxt = (arr, ek = '') => `${fmtDays(arr)}. ${arr.length === 1 ? 'gün' : 'günler'}${ek}`;
+
+function totalMonthHours() {
+  return daysIn() * cols().reduce((t, c) => t + duration(c.start, c.end), 0);
+}
+function computeTargets(P = getPlan()) {
+  const totalH = totalMonthHours();
+  const tgt = {}; let fixedSum = 0; const autos = [];
+  S.staff.forEach(s => {
+    const p = P.people[s.id];
+    if (!p.active) return;
+    const t = parseFloat(String(p.target).replace(',', '.'));
+    if (t > 0) { tgt[s.id] = t; fixedSum += t; } else autos.push(s.id);
+  });
+  const share = autos.length ? Math.max(0, (totalH - fixedSum) / autos.length) : 0;
+  autos.forEach(id => tgt[id] = share);
+  return { tgt, totalH, fixedSum, autos, share };
+}
+
+function fitCheck(list, s, e, R) {
+  for (const x of list) if (x.s < e - 1e-6 && x.e > s + 1e-6) return null;
+  let cs = s, ce = e, cont = false, changed = true;
+  const used = new Set();
+  while (changed) {
+    changed = false;
+    list.forEach((x, i) => {
+      if (used.has(i)) return;
+      if (Math.abs(x.e - cs) < 1e-6) { cs = x.s; used.add(i); changed = cont = true; }
+      else if (Math.abs(x.s - ce) < 1e-6) { ce = x.e; used.add(i); changed = cont = true; }
+    });
+  }
+  if (ce - cs > R.maxCont + 1e-6) return null;
+  for (let i = 0; i < list.length; i++) {
+    if (used.has(i)) continue;
+    const x = list[i];
+    const gap = x.e <= cs ? cs - x.e : x.s - ce;
+    if (gap < R.minRest - 1e-6) return null;
+  }
+  return { cont };
+}
+
+function generatePlan() {
+  const P = getPlan(), R = P.rules, C = cols(), n = daysIn(), M = getMonth();
+  const active = S.staff.filter(s => P.people[s.id].active);
+  const slot = (d, c) => { const s = d * 24 + minutes(C[c].start) / 60; return [s, s + duration(C[c].start, C[c].end)]; };
+
+  const baseCells = M.map(() => C.map(() => null));
+  if (R.keep) M.forEach((r, d) => C.forEach((_, c) => {
+    const cell = (r[c] || []).filter(a => staffById(a.s) && !a.g);
+    if (cell.length) baseCells[d][c] = cell.map(a => ({ ...a }));
+  }));
+  S.staff.forEach(s => (P.people[s.id].fixed || []).forEach(f => {
+    if (f.d >= n || f.c >= C.length) return;
+    const cell = baseCells[f.d][f.c] ||= [];
+    if (!cell.some(a => a.s === s.id)) cell.push({ s: s.id });
+  }));
+
+  const base = {};
+  S.staff.forEach(s => base[s.id] = []);
+  baseCells.forEach((r, d) => r.forEach((cell, c) => cell && cell.forEach(a => {
+    let [s, e] = slot(d, c);
+    if (a.a && a.b) { s = d * 24 + minutes(a.a) / 60; e = s + duration(a.a, a.b); }
+    base[a.s]?.push({ s, e, we: isWE(d) });
+  })));
+
+  const free = [];
+  for (let d = 0; d < n; d++) {
+    let c = 0;
+    while (c < C.length) {
+      const g = [c];
+      while (c + 1 < C.length && R.link[c]) g.push(++c);
+      c++;
+      const freeCols = g.filter(x => !baseCells[d][x]);
+      const groups = freeCols.length === g.length ? [g] : freeCols.map(x => [x]);
+      for (const gg of groups) {
+        const [s] = slot(d, gg[0]);
+        const h = gg.reduce((t, x) => t + duration(C[x].start, C[x].end), 0);
+        free.push({ d, cols: gg, s, e: s + h, h, we: isWE(d) });
+      }
+    }
+  }
+  free.sort((a, b) => a.s - b.s);
+
+  const { tgt } = computeTargets(P);
+  let best = null;
+  for (let it = 0; it < 400; it++) {
+    const iv = {}, hrs = {}, we = {};
+    S.staff.forEach(s => {
+      iv[s.id] = base[s.id].map(x => ({ ...x }));
+      hrs[s.id] = iv[s.id].reduce((t, x) => t + x.e - x.s, 0);
+      we[s.id] = iv[s.id].filter(x => x.we).length;
+    });
+    const assign = [];
+    let emptyH = 0;
+    for (const b of free) {
+      let pick = null, top = -Infinity;
+      for (const s of active) {
+        const p = P.people[s.id];
+        if (p.leave.includes(b.d + 1)) continue;
+        if (!b.cols.every(c => p.cols[c])) continue;
+        if (p.block.some(x => x.d === b.d && b.cols.includes(x.c))) continue;
+        const fit = fitCheck(iv[s.id], b.s, b.e, R);
+        if (!fit) continue;
+        const t = tgt[s.id] || 0;
+        let sc = (t - hrs[s.id]) / Math.max(t, 8);
+        if (hrs[s.id] + b.h > t + R.tol) sc -= 5;
+        if (fit.cont && R.cont) sc += 0.6;
+        if (b.we) sc -= 0.03 * we[s.id];
+        sc += Math.random() * 0.15;
+        if (sc > top) { top = sc; pick = s.id; }
+      }
+      assign.push(pick);
+      if (!pick) { emptyH += b.h; continue; }
+      iv[pick].push({ s: b.s, e: b.e, we: b.we });
+      hrs[pick] += b.h;
+      if (b.we) we[pick]++;
+    }
+    let cost = emptyH * 1000;
+    active.forEach(s => { const dl = hrs[s.id] - (tgt[s.id] || 0); cost += dl * dl; });
+    const wv = active.map(s => we[s.id]), avg = wv.reduce((a, b) => a + b, 0) / (wv.length || 1);
+    cost += wv.reduce((t, x) => t + (x - avg) ** 2, 0) * 20;
+    if (!best || cost < best.cost) best = { cost, assign, hrs: { ...hrs }, emptyH };
+  }
+
+  snapshot();
+  const NM = baseCells.map(r => r.map(cell => cell ? cell : []));
+  const empties = [];
+  free.forEach((b, i) => {
+    const who = best.assign[i];
+    b.cols.forEach(c => { NM[b.d][c] = who ? [{ s: who, g: 1 }] : []; });
+    if (!who) empties.push(b);
+  });
+  S.months[S.cur] = NM;
+  save(); renderAll();
+  return { hrs: best.hrs, tgt, empties };
+}
+
+/* ---------- Turkish command interpreter ---------- */
+const WEEKDAYS = [['pazartesi', 1], ['sali', 2], ['carsamba', 3], ['persembe', 4], ['cumartesi', 6], ['cuma', 5], ['pazar', 0]];
+
+const KEYWORDS = new Set(('saat saati saatlik gece geceler geceleri gunduz gunduzleri aksam aksamlari sabah izin izinli izne izni rapor raporlu tatil '
+  + 'sadece yalniz yalnizca hafta sonu sonlari ici gun gunu gunler gunleri nobet nobeti nobetler nobetci vardiya vardiyasi tutsun tutmasin tutacak tutamaz '
+  + 'tutmaz tutar yaz yazilsin yazin yazma koy koyma ver verme versin olsun olmasin olacak olmayacak gelsin gelemez gelmeyecek calissin calisacak '
+  + 'calismayacak calisamaz istiyor istemiyor yok var bu ay ayin her herkes hepsi toplam kadar arasi itibaren sonra once ekle sil kaldir iptal temizle '
+  + 'olustur hazirla planla dagit doldur aktif dahil haric disinda pazartesi sali carsamba persembe cuma cumartesi pazar ilk son ikinci ucuncu dorduncu '
+  + 'ile ila icin olarak gibi fazla en az cok bir tek tam full ekim kasim aralik ocak subat mart nisan mayis haziran temmuz agustos eylul '
+  + 'dinlenme kesintisiz ust uste art arda ayni kisi kural').split(/\s+/));
+const MONTH_RE = /\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\w*/g;
+
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return dp[a.length][b.length];
+}
+function tokenScore(w, tok) {
+  if (tok.length < 3) return 9;
+  if (w === tok) return 0;
+  if (w.startsWith(tok) && w.length - tok.length <= 5) return 0.5;
+  if (tok.length < 4 || w.length < 4 || KEYWORDS.has(w)) return 9;
+  const lim = tok.length >= 6 ? 2 : 1;
+  const d = Math.min(lev(w, tok), w.length > tok.length ? lev(w.slice(0, tok.length), tok) + 0.5 : 9);
+  return d <= lim ? d : 9;
+}
+
+function matchStaff(t) {
+  const ids = [], amb = [];
+  if (/\b(herkes\w*|hepsi\w*|tum personel\w*|butun personel\w*|tum ekip|butun ekip)\b/.test(t)) {
+    const P = getPlan();
+    S.staff.forEach(s => { if (P.people[s.id].active) ids.push(s.id); });
+    t = t.replace(/\b(herkes\w*|hepsi\w*|tum personel\w*|butun personel\w*|tum ekip|butun ekip)\b/g, ' ');
+    return { ids, amb, rest: t, all: true };
+  }
+  for (const s of [...S.staff].sort((a, b) => b.name.length - a.name.length)) {
+    const n = norm(s.name);
+    if (t.includes(n)) { ids.push(s.id); t = t.split(n).join(' '); }
+  }
+  const words = t.split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
+  for (const w of words) {
+    let bestScore = 9, cands = [];
+    for (const s of S.staff) {
+      if (ids.includes(s.id)) continue;
+      const sc = Math.min(...norm(s.name).split(/\s+/).map(tok => tokenScore(w, tok)));
+      if (sc < bestScore) { bestScore = sc; cands = [s]; }
+      else if (sc === bestScore && sc < 9) cands.push(s);
+    }
+    if (bestScore >= 9) continue;
+    if (cands.length === 1) { ids.push(cands[0].id); t = t.replace(new RegExp(`\\b${w}\\b`), ' '); }
+    else amb.push({ w, names: cands.map(c => c.name) });
+  }
+  return { ids, amb, rest: t };
+}
+
+function parseRuleCommand(t, log) {
+  const R = getPlan().rules, C = cols();
+  let hit = false, m;
+  if ((m = t.match(/dinlenme\D{0,20}(\d+)|(\d+)\s*saat\w*\s*dinlenme/))) { R.minRest = +(m[1] || m[2]); log.push({ m: `Kural: nöbet arası en az ${R.minRest} saat dinlenme` }); hit = true; }
+  if ((m = t.match(/(kesintisiz|ust uste|art arda|en fazla)\D{0,20}(\d+)\s*saat/))) { R.maxCont = +m[2]; log.push({ m: `Kural: en fazla ${R.maxCont} saat kesintisiz` }); hit = true; }
+  if (/ayni kisi/.test(t)) {
+    const kinds = ['gunduz', 'aksam', 'gece'].filter(k => t.includes(k));
+    const neg = /(olmasin|degil|ayri|istemiyorum)/.test(t);
+    C.forEach((c, i) => {
+      if (i === C.length - 1) return;
+      const a = colKind(c), b = colKind(C[i + 1]);
+      if (kinds.length < 2 || (kinds.includes(a) && kinds.includes(b))) { R.link[i] = !neg; hit = true; log.push({ m: `Kural: ${colShort(i)} + ${colShort(i + 1)} ${neg ? 'farklı kişi olabilir' : 'hep aynı kişi'}` }); }
+    });
+  }
+  if (/24 saatlik/.test(t) && /(olmasin|istemiyorum|yok)/.test(t)) { R.cont = false; R.maxCont = Math.min(R.maxCont, 16); log.push({ m: 'Kural: 24 saatlik nöbet yazılmayacak' }); hit = true; }
+  if (hit) save();
+  return hit;
+}
+
+function extractDays(t, n) {
+  const days = new Set();
+  const addWd = wd => { for (let d = 1; d <= n; d++) if (dateOf(d - 1).getDay() === wd) days.add(d); };
+  const range = (a, b) => { for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= n) days.add(i); };
+  t = t.replace(/\b(\d{1,2})\s*[./]\s*(\d{1,2})(?:\s*[./]\s*\d{2,4})?\b/g, (m, d, mo) => (+mo >= 1 && +mo <= 12 ? ` ${d} ` : m));
+  t = t.replace(MONTH_RE, ' ').replace(/\b20\d\d\b/g, ' ').replace(/\bayin\b/g, ' ').replace(/\b\d{1,2}:\d{2}\b/g, ' ');
+  if (/hafta\s*son/.test(t)) { addWd(6); addWd(0); t = t.replace(/hafta\s*son\w*/g, ' '); }
+  if (/hafta\s*ic/.test(t)) { [1, 2, 3, 4, 5].forEach(addWd); t = t.replace(/hafta\s*ic\w*/g, ' '); }
+  const weekIdx = { ilk: 0, birinci: 0, ikinci: 1, ucuncu: 2, dorduncu: 3 };
+  t = t.replace(/\b(ilk|birinci|ikinci|ucuncu|dorduncu|son)\s+hafta\w*/g, (m, w) => {
+    if (w === 'son') range(n - 6, n); else range(weekIdx[w] * 7 + 1, weekIdx[w] * 7 + 7);
+    return ' ';
+  });
+  if (/\bay\s*sonu/.test(t)) { range(n - 4, n); t = t.replace(/\bay\s*sonu\w*/g, ' '); }
+  for (const [w, wd] of WEEKDAYS) {
+    const re = new RegExp(`${w}\\w*`, 'g');
+    if (re.test(t)) { addWd(wd); t = t.replace(re, ' '); }
+  }
+  t = t.replace(/\b(\d{1,2})\s*(?:-|–|ile|ila|den|dan|ten|tan)\s*(\d{1,2})\b(?:\s*(?:i|u|ye|ya|e|a|ne|na|ine|una|sine)\b)?(?:\s*(?:kadar|arasi\w*))?/g, (m, a, b) => { range(+a, +b); return ' '; });
+  t = t.replace(/\b(\d{1,2})\s*(?:\w{0,5})\s*(itibaren|sonrasi\w*)/g, (m, a) => { range(+a, n); return ' '; });
+  t = t.replace(/\b(\d{1,2})\s*(?:\w{0,5})\s*kadar/g, (m, a) => { range(1, +a); return ' '; });
+  (t.match(/\b\d{1,2}\b/g) || []).forEach(x => { if (+x >= 1 && +x <= n) days.add(+x); });
+  return days;
+}
+
+function extractShifts(t) {
+  const C = cols(), shifts = new Set();
+  const hourOf = (c, k) => (minutes(c[k]) / 60) % 24;
+  t = t.replace(/\b(\d{1,2})(?:[:.](\d{2}))?\s*(?:-|–|ile|ila|den|dan|ten|tan)\s*(\d{1,2})(?:[:.](\d{2}))?\b(?:\s*(?:ye|ya|e|a|e kadar|a kadar))?/g, (m, h1, m1, h2) => {
+    const i = C.findIndex(c => hourOf(c, 'start') === +h1 % 24);
+    if (i < 0) return m;
+    for (let j = i; j < C.length; j++) {
+      if (hourOf(C[j], 'end') === +h2 % 24) { for (let k = i; k <= j; k++) shifts.add(k); return ' '; }
+    }
+    return m;
+  });
+  if (/\b(tam gun|24 saatlik|full|tum vardiya\w*|butun vardiya\w*|tum gun)\b/.test(t)) { C.forEach((_, i) => shifts.add(i)); t = t.replace(/\b(tam gun|24 saatlik|full|tum vardiya\w*|butun vardiya\w*|tum gun)\b/g, ' '); }
+  const kindRe = { gunduz: /(gunduz|sabah|mesai)/, aksam: /(aksam|ogleden sonra)/, gece: /gece/ };
+  for (const [k, re] of Object.entries(kindRe)) if (re.test(t)) C.forEach((c, i) => { if (colKind(c) === k) shifts.add(i); });
+  t = t.replace(/(gunduz|sabah|aksam|gece|mesai|ogleden sonra)\w*/g, ' ');
+  return { shifts, rest: t };
+}
+
+const NUMW = { bir: 1, iki: 2, uc: 3, dort: 4, dord: 4, bes: 5, alti: 6, yedi: 7, sekiz: 8, dokuz: 9, on: 10, yirmi: 20, otuz: 30, kirk: 40, elli: 50, altmis: 60, yetmis: 70, seksen: 80, doksan: 90, yuz: 100 };
+const NUM_SUFFIX = ['', 'i', 'u', 'si', 'su', 'nda', 'inda', 'unda', 'sinda', 'sunda', 'inde', 'unde', 'sinde', 'nde', 'de', 'da', 'te', 'ta', 'e', 'a', 'ye', 'ya', 'ine', 'una', 'sine', 'ten', 'tan', 'den', 'dan', 'inden', 'undan', 'sinden'];
+const UNIT_RE = /^(saat|nobet|gun|vardiya|kez|kere|defa)/;
+
+function numWords(t) {
+  const toks = t.split(' '), out = [];
+  const nameToks = new Set(S.staff.flatMap(s => norm(s.name).split(/\s+/)));
+  const parse = tok => {
+    if (nameToks.has(tok)) return null;
+    for (const [w, v] of Object.entries(NUMW)) {
+      if (tok.startsWith(w) && NUM_SUFFIX.includes(tok.slice(w.length))) return { v, w, suf: tok.slice(w.length) };
+    }
+    return null;
+  };
+  for (let i = 0; i < toks.length; i++) {
+    const seq = [];
+    let j = i;
+    while (j < toks.length) {
+      const p = parse(toks[j]);
+      if (!p) break;
+      seq.push(p); j++;
+      if (p.suf) break;
+    }
+    const next = toks[j] || '';
+    const lone = seq.length === 1 && (seq[0].w === 'bir' || (['on', 'alti', 'yedi', 'yuz'].includes(seq[0].w) && !seq[0].suf));
+    if (!seq.length || (lone && !UNIT_RE.test(next))) { out.push(toks[i]); continue; }
+    let cur = 0;
+    for (const p of seq) cur = p.v === 100 ? (cur || 1) * 100 : cur + p.v;
+    out.push(`${cur}${seq[seq.length - 1].suf ? ' ' + seq[seq.length - 1].suf : ''}`);
+    i = j - 1;
+  }
+  return out.join(' ');
+}
+
+function prep(line) {
+  let t = ' ' + norm(line).replace(/['’`]/g, ' ').replace(/(\d)([a-z])/g, '$1 $2').replace(/\s+/g, ' ') + ' ';
+  t = ' ' + numWords(t.trim()) + ' ';
+  const now = new Date(), [y, m] = ym();
+  if (now.getFullYear() === y && now.getMonth() + 1 === m) {
+    const rel = { bugun: 0, yarin: 1, 'obur gun': 2, 'ertesi gun': 2 };
+    for (const [w, off] of Object.entries(rel)) {
+      const d = now.getDate() + off;
+      if (d <= daysIn()) t = t.replace(new RegExp(`\\b${w}\\w*`, 'g'), ` ${d} `);
+    }
+  }
+  return t;
+}
+
+const clearLeaveRe = /(izin\w*\s*(sil|kaldir|temizle|iptal)|izinli degil|izni iptal|izni bitti|izinden don\w*|izinden gel\w*|raporu bitti|isbasi)/;
+
+const HELP_LINES = [
+  'Şunları yazabilirsin (her satıra bir istek):',
+  'İzin: "Sait 15-17 izinli", "Berat cumartesi yok", "Emre ilk hafta raporlu"',
+  'Saat: "Berat 240 saat", "Emre 10 nöbet tutsun", "herkes 180 saat"',
+  'Vardiya: "Hilal sadece gündüz", "Emre gece tutmasın", "Zeynep hafta sonu gece tutmasın"',
+  'Sabit: "Nurcan 7\'sinde gündüz tutsun", "Aysel 12\'sinde 16-08 tutsun"',
+  'Takas: "15\'inde Sait yerine Berat", "Sait ile Berat 20\'sini değişsin"',
+  'Kişi: "Mehmet Kaya ekle", "Ercan bu ay yok"',
+  'Sonra "Oluştur" yaz ya da "Listeyi Oluştur" butonuna bas.',
+];
+
+function trySwap(t, line, log) {
+  const { ids } = matchStaff(t);
+  if (ids.length !== 2) return false;
+  const pos = id => {
+    const toks = norm(staffById(id).name).split(/\s+/);
+    const words = t.split(/\s+/);
+    const i = words.findIndex(w => toks.some(tok => tokenScore(w, tok) < 9));
+    return i < 0 ? 999 : i;
+  };
+  const days = [...extractDays(extractShifts(t).rest, daysIn())];
+  const shifts = extractShifts(t).shifts;
+  if (!days.length) { log.push({ m: `Takas için gün yazmalısın. Örnek: "15'inde ${staffById(ids[0]).name.split(' ')[0]} yerine ${staffById(ids[1]).name.split(' ')[0]}"`, err: 1 }); return true; }
+  const words = t.split(/\s+/);
+  const yi = words.findIndex(w => w.startsWith('yerine'));
+  let from, to, swap = false;
+  if (yi >= 0) {
+    const [a, b] = ids;
+    const pa = pos(a), pb = pos(b);
+    from = pa < yi && (pb > yi || pb < pa) ? a : pb < yi ? b : a;
+    to = from === a ? b : a;
+  } else { [from, to] = ids; swap = true; }
+  const M = getMonth(), C = cols();
+  snapshot();
+  let changed = 0;
+  days.forEach(d => C.forEach((_, c) => {
+    if (shifts.size && !shifts.has(c)) return;
+    M[d - 1][c] = M[d - 1][c].map(a => {
+      if (a.s === from) { changed++; return { ...a, s: to, g: undefined }; }
+      if (swap && a.s === to) { changed++; return { ...a, s: from, g: undefined }; }
+      return a;
+    });
+  }));
+  const A = staffById(from).name, B = staffById(to).name;
+  if (!changed) {
+    history.pop();
+    log.push({ m: `${A}${swap ? ' ve ' + B : ''}, ${dayTxt(days.sort((x, y) => x - y))} listede yazılı değil. Önce tabloya bak; liste boşsa önce oluştur.`, err: 1 });
+    return true;
+  }
+  save(); renderAll();
+  log.push({ m: swap ? `${A} ile ${B}, ${dayTxt(days.sort((x, y) => x - y))} için yer değiştirdi` : `${dayTxt(days.sort((x, y) => x - y))} için ${A} yerine ${B} yazıldı` });
+  return true;
+}
+
+function interpret(text) {
+  const P = getPlan(), C = cols(), n = daysIn();
+  const log = [];
+  let gen = false;
+  const sentences = [];
+  for (const sen of text.split(/\n|;|\.(?=\s|$)/).map(x => x.trim()).filter(Boolean)) {
+    if (/\bekle\b/i.test(sen)) { sentences.push(sen); continue; }
+    const info = seg => {
+      const m = matchStaff(' ' + norm(seg).replace(/['’`]/g, ' ') + ' ');
+      return { named: m.ids.length + m.amb.length > 0, onlyNames: !m.rest.replace(/\bve\b/g, '').replace(/[^a-z0-9]/g, '') };
+    };
+    const segs = sen.split(',');
+    let curr = segs[0], currOnlyNames = info(segs[0]).onlyNames;
+    for (const seg of segs.slice(1)) {
+      const i = info(seg);
+      if (i.named && !currOnlyNames) { sentences.push(curr.trim()); curr = seg; currOnlyNames = i.onlyNames; }
+      else { curr += ',' + seg; currOnlyNames = currOnlyNames && i.onlyNames; }
+    }
+    sentences.push(curr.trim());
+  }
+
+  for (const line of sentences) {
+    let t = prep(line);
+    if (/^\s*(yardim|ne yazabilirim|nasil|ornek\w*|help)\b/.test(t)) { HELP_LINES.forEach(m => log.push({ m, info: 1 })); continue; }
+    if (/(olustur|hazirla|planla|dagit|doldur|yap bakalim)/.test(t)) gen = true;
+    if (/(yerine|degis|takas)/.test(t) && trySwap(t, line, log)) continue;
+    if (/sifirla/.test(t)) {
+      delete S.plans[S.cur]; getPlan();
+      log.push({ m: 'Bu ayın planlama ayarları sıfırlandı' }); continue;
+    }
+
+    if (/\bekle\b/.test(t)) {
+      const raw = line.replace(/\b(ekle|personel|listeye|olarak|yeni)\b/gi, ' ');
+      const names = raw.split(/,|\bve\b|\n/i).map(x => up(x.replace(/\s+/g, ' '))).filter(x => x.length >= 3);
+      const added = [];
+      names.forEach(nm => {
+        if (S.staff.some(s => s.name === nm)) return;
+        S.staff.push({ id: uid(), name: nm, color: COLORS[S.staff.length % COLORS.length] });
+        added.push(nm);
+      });
+      getPlan();
+      log.push(added.length ? { m: `Personel eklendi: ${added.join(', ')}` } : { m: `"${line}" – eklenecek yeni isim bulunamadı`, err: 1 });
+      continue;
+    }
+
+    const { ids, amb, rest } = matchStaff(t);
+    t = rest;
+    amb.forEach(a => log.push({ m: `"${a.w}" birden fazla kişiye uyuyor (${a.names.join(', ')}) – soyadıyla yaz`, err: 1 }));
+    if (!ids.length) {
+      if (parseRuleCommand(t, log)) continue;
+      if (!gen && !amb.length) log.push({ m: `Anlaşılamadı, cümlede personel ismi bulamadım: "${line}". Örnek: "Sait 15-17 izinli"`, err: 1 });
+      continue;
+    }
+
+    const neg = !clearLeaveRe.test(t) && /(izin|rapor|tatil|\byok\b|gelemez|gelmeyecek|gelmiyor|musait degil|musait olmayacak|calismayacak|calismiyor|calisamaz|olmayacak|\bbos\b|mazeret|disinda|haric)/.test(t);
+    const only = /\b(sadece|yalniz\w*|bir tek)\b/.test(t);
+    const noShift = /(tutmasin|tutmayacak|tutamaz|tutmaz|olmasin|istemiyor|istemez|vermeyin|verme\b|yazma\b|yazmayin|koyma\b|atama\b|haric|disinda)/.test(t);
+    const want = /(tutsun|tutacak|tutar\b|\byaz\b|yazilsin|yazin|yazar misin|\bkoy\b|koyun|\bata\b|atansin|\bver\b|versin|verin|nobetci|calissin|calisacak|olsun|olacak|gelsin|gelecek|istiyor)/.test(t);
+    const clearLeave = clearLeaveRe.test(t);
+
+    let target = null, countTarget = null;
+    t = t.replace(/(\d+(?:[.,]\d+)?)\s*saat\w*/, (m, x) => { target = parseFloat(x.replace(',', '.')); return ' '; });
+    if (target === null) t = t.replace(/saat\w*\s*(\d+(?:[.,]\d+)?)/, (m, x) => { target = parseFloat(x.replace(',', '.')); return ' '; });
+    let vagueLeave = false;
+    t = t.replace(/(\d+)\s*(nobet\w*|vardiya\w*|gun\b|gunu\b|gun\s+nobet|kez\b|kere\b|defa\b)/, (m, x, unit) => {
+      if (neg) { vagueLeave = true; return ' '; }
+      countTarget = { n: +x, unit: unit.startsWith('vardiya') ? 'v' : 'g' };
+      return ' ';
+    });
+
+    const sh = extractShifts(t);
+    const shifts = sh.shifts;
+    t = sh.rest;
+    const days = extractDays(t, n);
+    const dayList = [...days].sort((a, b) => a - b);
+
+    if (target === 24 && dayList.length && !/toplam|hedef/.test(t)) { target = null; C.forEach((_, i) => shifts.add(i)); }
+    if (countTarget) {
+      const per = countTarget.unit === 'v'
+        ? (shifts.size ? [...shifts] : C.map((_, i) => i)).reduce((s, i) => s + duration(C[i].start, C[i].end), 0) / (shifts.size || C.length)
+        : (shifts.size ? [...shifts] : C.map((_, i) => i)).reduce((s, i) => s + duration(C[i].start, C[i].end), 0);
+      target = countTarget.n * per;
+    }
+
+    for (const id of ids) {
+      const p = P.people[id], nm = staffById(id).name, done = [];
+      if (target !== null) { p.target = String(Math.round(target * 10) / 10); done.push(`hedef ${p.target} saat`); }
+      if (vagueLeave && !dayList.length) { log.push({ m: `${nm}: kaç gün izinli olduğunu yazdın ama hangi günler belli değil. Örnek: "${nm.split(' ')[0]} 12-14 izinli"`, err: 1 }); continue; }
+
+      if (clearLeave) {
+        p.leave = dayList.length ? p.leave.filter(d => !days.has(d)) : [];
+        done.push(dayList.length ? `${dayTxt(dayList, 'deki')} izni kaldırıldı` : 'tüm izinleri kaldırıldı');
+      } else if (dayList.length && /\b(iptal\w*|kaldir\w*|sil|silin\w*)\b/.test(t)) {
+        p.fixed = p.fixed.filter(f => !days.has(f.d + 1));
+        p.block = p.block.filter(f => !days.has(f.d + 1));
+        done.push(`${dayTxt(dayList, 'deki')} sabit/yasak atamaları kaldırıldı`);
+      } else if (dayList.length) {
+        if (only) {
+          p.leave = Array.from({ length: n }, (_, i) => i + 1).filter(d => !days.has(d));
+          done.push(`sadece ${dayTxt(dayList)} çalışır`);
+          if (shifts.size) { p.cols = C.map((_, i) => shifts.has(i)); done.push(`sadece ${[...shifts].map(colShort).join('/')}`); }
+        } else if ((neg || noShift) && shifts.size) {
+          dayList.forEach(d => shifts.forEach(c => { if (!p.block.some(x => x.d === d - 1 && x.c === c)) p.block.push({ d: d - 1, c }); }));
+          done.push(`${dayTxt(dayList)} ${[...shifts].map(colShort).join('/')} yazılmayacak`);
+        } else if (neg || noShift) {
+          p.leave = [...new Set([...p.leave, ...dayList])].sort((a, b) => a - b);
+          p.fixed = p.fixed.filter(f => !days.has(f.d + 1));
+          done.push(`${dayTxt(dayList)} izinli`);
+        } else if (want || shifts.size) {
+          const cs = shifts.size ? [...shifts] : C.map((_, i) => i);
+          dayList.forEach(d => cs.forEach(c => { if (!p.fixed.some(f => f.d === d - 1 && f.c === c)) p.fixed.push({ d: d - 1, c }); }));
+          p.leave = p.leave.filter(d => !days.has(d));
+          done.push(`${dayTxt(dayList)} ${cs.map(colShort).join('/')} sabit yazıldı`);
+        }
+      } else if (shifts.size) {
+        if (only || (want && !/(tutabilir|da tut|de tut|da yaz|de yaz)/.test(t))) { p.cols = C.map((_, i) => shifts.has(i)); done.push(`sadece ${[...shifts].map(colShort).join('/')} tutar`); }
+        else if (noShift || neg) { shifts.forEach(c => p.cols[c] = false); done.push(`${[...shifts].map(colShort).join('/')} tutmaz`); }
+        else { shifts.forEach(c => p.cols[c] = true); done.push(`${[...shifts].map(colShort).join('/')} tutabilir`); }
+      } else if ((/bu ay|tum ay|ay boyunca/.test(t) && (neg || noShift)) || /(listeden cikar|dahil etme|cikar\b|pasif)/.test(t)) {
+        p.active = false; done.push('bu ay listeye dahil edilmeyecek');
+      } else if (/(aktif|dahil|bu ay var|bu ay calis)/.test(t)) {
+        p.active = true; done.push('bu ay listeye dahil');
+      } else if (!done.length && (neg || noShift) && !target) {
+        log.push({ m: `${nm}: hangi günler izinli olduğunu anlayamadım. Gün numarası ya da gün adı yaz (örn. "15-17", "cumartesi", "ilk hafta")`, err: 1 });
+        continue;
+      }
+
+      if (!p.active && (target !== null || /sabit yazıldı/.test(done.join()))) { p.active = true; done.push('bu ay aktif yapıldı'); }
+      log.push(done.length ? { m: `${nm}: ${done.join(', ')}` } : { m: `${nm} için ne yapılacağını anlayamadım: "${line}". "izinli", "tutsun", "tutmasın", "sadece", "... saat" gibi bir ifade ekle.`, err: 1 });
+    }
+  }
+  save();
+  return { log, gen };
+}
+
+/* ---------- Planning modal ---------- */
+let planLog = [], planReport = '', planText = '';
+$('btnPlan').onclick = () => openPlanner();
+
+function exampleName(i) {
+  const s = S.staff[i] || S.staff[0];
+  return s ? s.name.split(' ')[0].toLocaleLowerCase('tr-TR').replace(/^./, c => c.toLocaleUpperCase('tr-TR')) : 'Ahmet';
+}
+function exampleLines() {
+  const a = exampleName(0), b = exampleName(1), c = exampleName(2);
+  return [`${a} 15-17 izinli`, `${b} 240 saat`, `${c} gece tutmasın`, `${a} sadece gündüz`, `${b} cumartesi yok`, `15'inde ${a} yerine ${b}`, 'Yardım'];
+}
+
+function plannerTotalsHTML() {
+  const { totalH, fixedSum, autos, share } = computeTargets();
+  const P = getPlan();
+  const activeCount = S.staff.filter(s => P.people[s.id].active).length;
+  const diff = totalH - fixedSum - share * autos.length;
+  return `
+    <span>Ayın toplam nöbet saati: <b>${totalH}</b></span>
+    <span>Aktif personel: <b>${activeCount}</b></span>
+    <span>Elle girilen hedef toplamı: <b>${Math.round(fixedSum)}</b></span>
+    ${autos.length ? `<span>Hedefi boş ${autos.length} kişiye otomatik: <b>~${Math.round(share)}</b> saat/kişi</span>` : ''}
+    ${Math.abs(diff) > 0.5 ? `<span class="${diff > 0 ? 'bad' : 'good'}">${diff > 0 ? `<b>${Math.round(diff)}</b> saat karşılanmıyor (hedefleri artır veya kişi ekle)` : `Hedefler ayın ihtiyacından <b>${Math.round(-diff)}</b> saat fazla`}</span>` : '<span class="good">Saatler tam karşılanıyor ✓</span>'}`;
+}
+
+function openPlanner() {
+  const P = getPlan(), C = cols(), R = P.rules;
+  const [y, m] = ym();
+  const { tgt } = computeTargets();
+  openModal(`
+    <h2>Akıllı Planlama – ${MONTHS[m - 1]} ${y}</h2>
+
+    <div class="step"><span class="no">1</span><div class="body">
+      <h4>İzinleri ve istekleri yaz</h4>
+      <div class="hint">Her satıra bir istek yaz ve <b>Uygula</b>'ya bas. Ne yazacağını bilmiyorsan aşağıdaki örneklere tıkla.</div>
+      <div class="ai">
+        <textarea id="aiText" placeholder="Örnek: ${esc(exampleName(0))} 15-17 izinli">${esc(planText)}</textarea>
+        <div class="btns">
+          <button class="primary" id="aiRun">Uygula</button>
+          <button id="aiRunGen">Uygula ve Oluştur</button>
+        </div>
+      </div>
+      <div class="quick">${exampleLines().map(x => `<button data-ex="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+      <div class="ailog">${planLog.map(l => `<div class="${l.err ? 'err' : l.info ? 'info' : ''}">${l.err ? '⚠' : l.info ? 'ℹ' : '✓'} ${esc(l.m)}</div>`).join('')}</div>
+    </div></div>
+
+    <div class="step"><span class="no">2</span><div class="body">
+      <h4>Tabloyu kontrol et</h4>
+      <div class="hint">Yazdıkların burada görünür, istersen buradan da değiştirebilirsin. Hedef saati boş bırakılan kişiler kalan saati eşit paylaşır.</div>
+      <div class="totals" id="plTotals">${plannerTotalsHTML()}</div>
+      <table class="plan">
+        <tr><th>Bu ay</th><th>Personel</th><th>Hedef saat</th><th>İzinli günler</th><th>Tutabileceği vardiyalar</th><th>Sabit / yasak atamalar</th></tr>
+        ${S.staff.map(s => {
+          const p = P.people[s.id];
+          return `<tr class="${p.active ? '' : 'off'}" data-id="${s.id}">
+            <td><input type="checkbox" data-f="active" ${p.active ? 'checked' : ''}></td>
+            <td><b>${esc(s.name)}</b></td>
+            <td><input class="tg" type="number" min="0" step="8" data-f="target" value="${esc(p.target)}" placeholder="${p.active ? Math.round(tgt[s.id] || 0) : ''}"></td>
+            <td><input class="lv" type="text" data-f="leave" value="${fmtDays(p.leave)}" placeholder="örn. 5, 12-15"></td>
+            <td><div class="cc">${C.map((c, i) => `<label><input type="checkbox" data-col="${i}" ${p.cols[i] ? 'checked' : ''}> ${colShort(i)}</label>`).join('')}</div></td>
+            <td>${p.fixed.map((f, i) => `<span class="badge" data-fx="${i}" title="Kaldırmak için tıkla">${f.d + 1}. gün ${colShort(f.c)}</span>`).join('')}${p.block.map((f, i) => `<span class="badge blk" data-bk="${i}" title="Kaldırmak için tıkla">⛔ ${f.d + 1}. gün ${colShort(f.c)}</span>`).join('')}</td>
+          </tr>`;
+        }).join('')}
+      </table>
+      <div class="addrow" style="max-width:620px">
+        <textarea id="bulkNames" rows="1" placeholder="Yeni isimleri buraya yapıştır (alt alta veya virgülle)" style="flex:1"></textarea>
+        <button id="bulkAdd">Ekle</button>
+      </div>
+      <details class="rulebox">
+        <summary>Kurallar (genelde değiştirmen gerekmez)</summary>
+      <div class="rules">
+        ${R.link.map((v, i) => `<label><input type="checkbox" data-link="${i}" ${v ? 'checked' : ''}> ${colShort(i)} + ${colShort(i + 1)} hep aynı kişi</label>`).join('')}
+        <label><input type="checkbox" id="rCont" ${R.cont ? 'checked' : ''}> Aynı kişi art arda devam etsin (24 saatlik nöbet)</label>
+        <label>En fazla kesintisiz <input type="number" id="rMax" min="8" step="8" value="${R.maxCont}"> saat</label>
+        <label>Nöbet arası en az <input type="number" id="rRest" min="0" step="1" value="${R.minRest}"> saat dinlenme</label>
+        <label>Hedefi en fazla <input type="number" id="rTol" min="0" step="8" value="${R.tol}"> saat aşabilir</label>
+        <label><input type="checkbox" id="rKeep" ${R.keep ? 'checked' : ''}> Tabloda elle girilmiş atamaları koru</label>
+      </div>
+      </details>
+    </div></div>
+
+    <div class="step"><span class="no">3</span><div class="body">
+      <h4>Listeyi oluştur</h4>
+      <div class="hint">Butona bas. Beğenmezsen tekrar bas, farklı bir dağılım çıkar. Tek tek düzeltmeleri sonra tabloda yaparsın.</div>
+      <button class="primary big" id="plGen">Listeyi Oluştur</button>
+      <div class="report" id="plReport">${planReport}</div>
+    </div></div>
+
+    <div class="foot"><button id="plClose">Kapat</button></div>`);
+  $('modalBox').classList.add('wide');
+  bindPlanner();
+}
+
+function bindPlanner() {
+  const P = getPlan(), R = P.rules, box = $('modalBox');
+  const refreshTotals = () => { $('plTotals').innerHTML = plannerTotalsHTML(); };
+  $('aiText').addEventListener('input', e => planText = e.target.value);
+
+  const runAI = alsoGen => {
+    const txt = $('aiText').value.trim();
+    if (!txt && !alsoGen) return;
+    const r = txt ? interpret(txt) : { log: [], gen: false };
+    planLog = r.log;
+    if (!r.log.some(l => l.err)) planText = '';
+    else planText = txt;
+    if (alsoGen || r.gen) return runGenerate();
+    renderAll(); openPlanner();
+  };
+  box.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => {
+    const ta = $('aiText');
+    ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + b.dataset.ex;
+    planText = ta.value; ta.focus();
+  });
+  $('aiRun').onclick = () => runAI(false);
+  $('aiRunGen').onclick = () => runAI(true);
+  $('aiText').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAI(false); } });
+
+  box.querySelectorAll('tr[data-id]').forEach(tr => {
+    const p = P.people[tr.dataset.id];
+    tr.querySelector('[data-f=active]').onchange = e => { p.active = e.target.checked; save(); openPlanner(); };
+    tr.querySelector('[data-f=target]').onchange = e => { p.target = e.target.value; save(); refreshTotals(); };
+    tr.querySelector('[data-f=leave]').onchange = e => { p.leave = parseDays(e.target.value); e.target.value = fmtDays(p.leave); save(); };
+    tr.querySelectorAll('[data-col]').forEach(cb => cb.onchange = () => { p.cols[+cb.dataset.col] = cb.checked; save(); });
+    tr.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => { p.fixed.splice(+b.dataset.fx, 1); save(); openPlanner(); });
+    tr.querySelectorAll('[data-bk]').forEach(b => b.onclick = () => { p.block.splice(+b.dataset.bk, 1); save(); openPlanner(); });
+  });
+  box.querySelectorAll('[data-link]').forEach(cb => cb.onchange = () => { R.link[+cb.dataset.link] = cb.checked; save(); });
+  $('rCont').onchange = e => { R.cont = e.target.checked; save(); };
+  $('rKeep').onchange = e => { R.keep = e.target.checked; save(); };
+  $('rMax').onchange = e => { R.maxCont = Math.max(1, +e.target.value || 24); save(); };
+  $('rRest').onchange = e => { R.minRest = Math.max(0, +e.target.value || 0); save(); };
+  $('rTol').onchange = e => { R.tol = Math.max(0, +e.target.value || 0); save(); };
+  $('bulkAdd').onclick = () => {
+    const names = $('bulkNames').value.split(/[\n,]+/).map(up).filter(x => x.length >= 2);
+    let k = 0;
+    names.forEach(nm => { if (!S.staff.some(s => s.name === nm)) { S.staff.push({ id: uid(), name: nm, color: COLORS[S.staff.length % COLORS.length] }); k++; } });
+    getPlan(); save(); renderAll(); openPlanner();
+    toast(`${k} kişi eklendi`);
+  };
+  $('plClose').onclick = closeModal;
+  $('plGen').onclick = runGenerate;
+}
+
+function runGenerate() {
+  const P = getPlan();
+  if (!S.staff.some(s => P.people[s.id].active)) { planLog = [{ m: 'Bu ay aktif personel yok', err: 1 }]; return openPlanner(); }
+  if (!P.rules.keep) {
+    const filled = getMonth().some(r => r.some(c => c.length));
+    if (filled && !confirm('"Elle girilmiş atamaları koru" kapalı: tablodaki mevcut liste silinip yeniden oluşturulacak. Devam?')) return;
+  }
+  const { hrs, tgt, empties } = generatePlan();
+  const rows = S.staff.filter(s => P.people[s.id].active || hrs[s.id]).map(s => {
+    const h = hrs[s.id] || 0, t = tgt[s.id] || 0, d = h - t;
+    return `<tr><td>${esc(s.name)}</td><td>${Math.round(t)}</td><td><b>${Math.round(h)}</b></td><td class="${Math.abs(d) <= P.rules.tol ? 'good' : 'bad'}">${d > 0 ? '+' : ''}${Math.round(d)}</td></tr>`;
+  }).join('');
+  const off = S.staff.some(s => P.people[s.id].active && Math.abs((hrs[s.id] || 0) - (tgt[s.id] || 0)) > P.rules.tol);
+  planReport = `
+    ${off ? '<div class="ailog" style="margin-bottom:8px"><div class="info">ℹ Bazı kişilerin saati hedeften farklı çıktı. Sebebi genelde şudur: gece tutabilen kişi az ya da izin çok. "Sadece gündüz" tutanlara hedef saat yazarsan sonuç düzelir.</div></div>' : ''}
+    <h4>Sonuç</h4>
+    <table><tr><th>Personel</th><th>Hedef</th><th>Atanan</th><th>Fark</th></tr>${rows}</table>
+    ${empties.length ? `<div class="ailog" style="margin-top:8px"><div class="err">⚠ ${empties.length} vardiya boş kaldı, çünkü o saatlerde uygun kimse yok: ${empties.slice(0, 12).map(b => `${b.d + 1}. gün ${b.cols.map(colShort).join('+')}`).join(', ')}${empties.length > 12 ? '…' : ''}. Çözüm: kişi ekle ya da birinin hedef saatini artır.</div></div>` : '<div class="ailog" style="margin-top:8px"><div>✓ Liste hazır, tüm vardiyalar dolu. Pencereyi kapatıp tabloya bakabilirsin.</div></div>'}`;
+  openPlanner();
+}
+
+/* ---------- Print ---------- */
+function doPrint() {
+  const { empty } = computeStats();
+  if (empty && !confirm(`${empty} boş vardiya var. Yine de yazdırılsın mı?`)) return;
+  const old = document.title;
+  const [y, m] = ym();
+  document.title = `Nobet_Listesi_${y}-${String(m).padStart(2, '0')}`;
+  window.print();
+  document.title = old;
+}
+$('btnPrint').onclick = doPrint;
+
+renderAll();
+</script>
+</body>
+</html>
