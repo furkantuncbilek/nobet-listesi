@@ -212,9 +212,10 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const $ = id => document.getElementById(id);
 
 function defaults() {
-  const names = [];
+  let d;
+  const names = ['SAİT İPEK','BERAT BAYAZIT','EMRE KAYALI','HİLAL DURAN','TOLGA AYAZ','NURCAN HAMARTA','ZEYNEP ÜNLÜ','BİLGE KARATAŞ','NURCAN AVCI','AYSEL AKYÜZ','ERCAN FİLİZ'];
   const now = new Date();
-  return {
+  d = {
     cur: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
     settings: {
       institution: 'AKDAĞMADENİ ŞEHİT SİNAN BABACAN DEVLET HASTANESİ',
@@ -235,7 +236,44 @@ function defaults() {
     staff: names.map((n, i) => ({ id: uid(), name: n, color: COLORS[i % COLORS.length] })),
     months: {},
   };
+  const byCode = { S: 0, B: 1, E: 2, H: 3, T: 4, NH: 5, Z: 6, BK: 7, NA: 8, A: 9, EF: 10 };
+  d.months['2026-10'] = DEFAULT_OCTOBER.trim().split('\n').map(row =>
+    row.trim().split(/\s+/).map(cell => cell.split('+').map(code => ({ s: d.staff[byCode[code]].id }))));
+  return d;
 }
+
+const DEFAULT_OCTOBER = `
+S S S
+B B B
+H E E
+T S S
+B B B
+E B B
+S S S
+B B B
+E E E
+NH+Z S S
+BK B B
+E E E
+S S S
+B B B
+E E E
+S E E
+NA B B
+A E E
+S S S
+B B B
+E E E
+S S S
+B B B
+EF E E
+S S S
+B B B
+E E E
+B B B
+S S S
+E S S
+S S S`;
 
 function load() {
   try {
@@ -244,6 +282,8 @@ function load() {
       const d = JSON.parse(raw), def = defaults();
       d.settings = { ...def.settings, ...d.settings };
       d.months ||= {}; d.staff ||= []; d.cur ||= def.cur;
+      const hasData = Object.values(d.months).some(M => M.some(r => r.some(c => c.length)));
+      if (!d.staff.length && !hasData) return { ...def, settings: d.settings, cur: d.cur };
       return d;
     }
   } catch (e) { console.error(e); }
