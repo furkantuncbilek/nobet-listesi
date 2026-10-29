@@ -1303,8 +1303,8 @@ let planLog = [], planReport = '', planText = '';
 $('btnPlan').onclick = () => openPlanner();
 
 function exampleName(i) {
-  const s = S.staff[i] || S.staff[0];
-  return s ? s.name.split(' ')[0].toLocaleLowerCase('tr-TR').replace(/^./, c => c.toLocaleUpperCase('tr-TR')) : 'Ahmet';
+  const s = S.staff[i];
+  return s ? s.name.split(' ')[0].toLocaleLowerCase('tr-TR').replace(/^./, c => c.toLocaleUpperCase('tr-TR')) : ['Ahmet', 'Mehmet', 'Ayşe'][i];
 }
 function exampleLines() {
   const a = exampleName(0), b = exampleName(1), c = exampleName(2);
