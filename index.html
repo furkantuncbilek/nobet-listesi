@@ -506,7 +506,24 @@ function renderSummary() {
     ${rows.map(r => `<tr><td>${esc(r.s.name)}</td><td>${r.x.n}</td><td>${r.x.days.size}</td><td>${r.x.we}</td><td>${fmt(r.x.h)}</td></tr>`).join('')}</table>`;
 }
 
+const hasCells = M => !!M && M.some(r => r.some(c => c.length));
+
+function seedMonth(k = S.cur) {
+  S.seeded ||= {};
+  if (S.seeded[k]) return;
+  S.seeded[k] = true;
+  if (hasCells(S.months[k])) return save();
+  const src = Object.keys(S.months).filter(x => x < k && hasCells(S.months[x])).sort().pop();
+  if (!src) return save();
+  const P = S.months[src], M = getMonth(k);
+  M.forEach((row, d) => cols().forEach((_, c) => {
+    row[c] = (P[d % P.length][c] || []).filter(e => staffById(e.s)).map(e => ({ ...e, g: 1 }));
+  }));
+  save();
+}
+
 function renderAll() {
+  seedMonth();
   $('month').value = S.cur;
   renderPalette(); renderSheet(); renderSummary();
 }
