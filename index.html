@@ -135,6 +135,59 @@
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
   .toast.show{opacity:1}
 
+  .dshort{display:none}
+  .tablewrap{overflow-x:auto}
+  .chip.addmode .nm{font-weight:500;font-size:12px}
+
+  @media screen and (max-width: 900px){
+    body{font-size:15px;padding-bottom:84px}
+    input,select,textarea{font-size:16px}
+    .topbar{position:static;padding:8px 10px;gap:6px}
+    .topbar h1{width:100%;font-size:17px;margin:0}
+    .topbar button{padding:7px 10px;font-size:13px}
+    .topbar input[type=month]{flex:1;min-width:0}
+    .topbar .sp{display:none}
+    .layout{display:flex;flex-direction:column;padding:8px;gap:10px}
+    .main{order:1;overflow:visible}
+    .side{order:2;position:static;max-height:none;overflow:visible}
+    .side .card .hint{display:none}
+
+    .palette{position:fixed;left:0;right:0;bottom:0;z-index:40;flex-direction:row;gap:6px;overflow-x:auto;
+      background:#fff;border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+    .palette > .hint{display:none}
+    .chip{flex:none;padding:9px 12px}
+    .chip .key,.chip .act{display:none!important}
+    .chip .nm{white-space:nowrap}
+
+    .sheet{width:100%;min-height:0;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    table.grid{font-size:10px}
+    table.grid col:nth-child(1){width:22px!important}
+    table.grid col:nth-child(2){width:50px!important}
+    table.grid td,table.grid th{height:30px;padding:1px 2px}
+    table.grid td.cell{white-space:normal;font-size:9.5px;line-height:1.15}
+    table.grid td.date,table.grid td.sn{font-size:10px}
+    table.grid .title{font-size:12px;height:auto;padding:4px}
+    table.grid .subtitle,table.grid thead .colh th{font-size:10px}
+    table.grid .logo .inst{font-size:7px}
+    .dfull{display:none}
+    .dshort{display:inline}
+    .sigs{font-size:9px;margin-top:10px}
+    .sigs .space{height:24px}
+
+    .modal{padding:0}
+    .box,.box.wide{width:100%;min-height:100%;border-radius:0;padding:14px}
+    .box .foot{position:sticky;bottom:0;background:#fff;padding:10px 0 4px;margin-top:10px}
+    .ai{grid-template-columns:1fr}
+    .ai .btns{flex-direction:row}
+    .ai .btns button{flex:1}
+    .frow label{min-width:0;width:100%}
+    .frow input[type=text],.frow textarea{min-width:0}
+    .step{gap:8px}
+    .rules{flex-direction:column;align-items:flex-start;gap:10px}
+    table.plan{min-width:640px}
+    .totals{gap:6px 12px;font-size:12px}
+  }
+
   @page{size:A4 portrait;margin:8mm}
   @media print{
     body{background:#fff}
@@ -292,7 +345,7 @@ function load() {
 let S = load();
 const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(S));
 
-let brush = null;
+let brush = null, addMode = false;
 const history = [];
 
 const cols = () => S.settings.columns;
@@ -361,7 +414,8 @@ function renderSheet() {
     const dt = dateOf(d), wd = dt.getDay();
     const we = st.shadeWeekend && (wd === 0 || wd === 6);
     const ds = `${String(dt.getDate()).padStart(2, '0')}.${String(dt.getMonth() + 1).padStart(2, '0')}.${dt.getFullYear()} ${DAYS[wd]},`;
-    rows += `<tr class="${we ? 'we' : ''}"><td class="sn">${d + 1}</td><td class="date">${ds}</td>` +
+    const dsShort = `${String(dt.getDate()).padStart(2, '0')} ${DAYS[wd].slice(0, 3)}`;
+    rows += `<tr class="${we ? 'we' : ''}"><td class="sn">${d + 1}</td><td class="date"><span class="dfull">${ds}</span><span class="dshort">${dsShort}</span></td>` +
       C.map((_, c) => `<td class="${cellClass(row[c], c)}" data-d="${d}" data-c="${c}">${cellHTML(row[c], c)}</td>`).join('') + '</tr>';
   });
   const sigs = st.signatures.filter(s => s.title || s.name).map(s =>
@@ -400,6 +454,9 @@ function renderPalette() {
   $('palette').innerHTML = (S.staff.length ? '' : '<div class="hint" style="margin:0 0 6px">Henüz personel yok. Aşağıdaki kutuya ad soyad yazıp <b>Ekle</b>\'ye bas.</div>') + items + `
     <div class="chip erase ${brush === 'erase' ? 'active' : ''}" data-id="erase">
       <span class="dot"></span><span class="nm">Silgi</span><span class="key">0</span>
+    </div>
+    <div class="chip addmode ${addMode ? 'active' : ''}" data-id="addmode" title="Açıkken tıkladığın kişi hücreye ikinci kişi olarak eklenir">
+      <span class="nm">➕ İkinci kişi ekle</span>
     </div>`;
 }
 
@@ -479,7 +536,7 @@ document.addEventListener('mousedown', e => {
   const d = +td.dataset.d, c = +td.dataset.c;
   if (!brush) return openCellEditor(d, c);
   snapshot();
-  painting = true; paintAdd = e.shiftKey || e.metaKey || e.ctrlKey; paintedAny = false;
+  painting = true; paintAdd = addMode || e.shiftKey || e.metaKey || e.ctrlKey; paintedAny = false;
   if (applyBrush(d, c, paintAdd)) { paintedAny = true; updateCell(d, c); }
 });
 document.addEventListener('mouseover', e => {
@@ -580,6 +637,7 @@ $('palette').addEventListener('click', e => {
     if (brush === id) brush = null;
     save(); renderAll(); return;
   }
+  if (id === 'addmode') { addMode = !addMode; return renderPalette(); }
   brush = brush === id ? null : id;
   renderPalette();
 });
@@ -1379,7 +1437,7 @@ function openPlanner() {
       <h4>Tabloyu kontrol et</h4>
       <div class="hint">Yazdıkların burada görünür, istersen buradan da değiştirebilirsin. Hedef saati boş bırakılan kişiler kalan saati eşit paylaşır.</div>
       <div class="totals" id="plTotals">${plannerTotalsHTML()}</div>
-      <table class="plan">
+      <div class="tablewrap"><table class="plan">
         <tr><th>Bu ay</th><th>Personel</th><th>Hedef saat</th><th>İzinli günler</th><th>Tutabileceği vardiyalar</th><th>Sabit / yasak atamalar</th></tr>
         ${S.staff.map(s => {
           const p = P.people[s.id];
@@ -1392,7 +1450,7 @@ function openPlanner() {
             <td>${p.fixed.map((f, i) => `<span class="badge" data-fx="${i}" title="Kaldırmak için tıkla">${f.d + 1}. gün ${colShort(f.c)}</span>`).join('')}${p.block.map((f, i) => `<span class="badge blk" data-bk="${i}" title="Kaldırmak için tıkla">⛔ ${f.d + 1}. gün ${colShort(f.c)}</span>`).join('')}</td>
           </tr>`;
         }).join('')}
-      </table>
+      </table></div>
       <div class="addrow" style="max-width:620px">
         <textarea id="bulkNames" rows="1" placeholder="Yeni isimleri buraya yapıştır (alt alta veya virgülle)" style="flex:1"></textarea>
         <button id="bulkAdd">Ekle</button>
