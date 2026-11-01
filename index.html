@@ -258,6 +258,7 @@
 <script>
 const STORE_KEY = 'nobetPanel_v1';
 const DAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+const DAYS_SHORT = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
 const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9'];
 const up = s => (s || '').toLocaleUpperCase('tr-TR').trim();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -414,7 +415,7 @@ function renderSheet() {
     const dt = dateOf(d), wd = dt.getDay();
     const we = st.shadeWeekend && (wd === 0 || wd === 6);
     const ds = `${String(dt.getDate()).padStart(2, '0')}.${String(dt.getMonth() + 1).padStart(2, '0')}.${dt.getFullYear()} ${DAYS[wd]},`;
-    const dsShort = `${String(dt.getDate()).padStart(2, '0')} ${DAYS[wd].slice(0, 3)}`;
+    const dsShort = `${String(dt.getDate()).padStart(2, '0')} ${DAYS_SHORT[wd]}`;
     rows += `<tr class="${we ? 'we' : ''}"><td class="sn">${d + 1}</td><td class="date"><span class="dfull">${ds}</span><span class="dshort">${dsShort}</span></td>` +
       C.map((_, c) => `<td class="${cellClass(row[c], c)}" data-d="${d}" data-c="${c}">${cellHTML(row[c], c)}</td>`).join('') + '</tr>';
   });
