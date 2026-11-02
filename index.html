@@ -32,6 +32,12 @@
   .palette{display:flex;flex-direction:column;gap:4px}
   .chip{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;user-select:none;background:#fff}
   .chip:hover{border-color:#b9c1cf}
+  .chip,table.grid td.cell{-webkit-touch-callout:none}
+  .dragghost{position:fixed;left:0;top:0;z-index:1000;pointer-events:none;padding:5px 10px;border-radius:8px;font-weight:700;font-size:13px;color:#111;background:color-mix(in srgb,var(--c) 30%,white);border:2px solid var(--c);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+  body.dragging,body.dragging *{cursor:grabbing!important}
+  body.dragging table.grid td.cell:hover{outline:none}
+  table.grid td.cell.dropover,body.dragging table.grid td.cell.dropover:hover{outline:3px dashed var(--primary);outline-offset:-3px;background:#eef4ff}
+  #palette.dropover{outline:3px dashed var(--danger);outline-offset:2px;border-radius:8px}
   .chip.active{outline:2px solid var(--primary);border-color:var(--primary);background:#eef4ff}
   .chip .dot{width:12px;height:12px;border-radius:50%;flex:none}
   .chip .nm{flex:1;font-weight:600;font-size:13px}
@@ -76,7 +82,7 @@
   @media screen{
     table.grid td.cell:hover{outline:2px solid var(--primary);outline-offset:-2px}
     table.grid td.cell.empty{background:repeating-linear-gradient(45deg,#fff 0 6px,#fff1f1 6px 12px)}
-    table.grid td.cell .p{background:color-mix(in srgb,var(--c) 22%,white);border-radius:4px;padding:0 3px}
+    table.grid td.cell .p{cursor:grab;background:color-mix(in srgb,var(--c) 22%,white);border-radius:4px;padding:0 3px}
     table.grid td.cell.custom{box-shadow:inset 0 0 0 2px #f59e0b}
   }
 
@@ -235,6 +241,7 @@
       </div>
       <div class="hint">
         • Kişiye tıkla, sonra tablodaki hücreye tıkla.<br>
+        • Ya da ismi tutup tablodaki hücreye <b>sürükle</b>. Tablodaki bir ismi başka hücreye sürüklersen yer değiştirir, bu listeye geri sürüklersen silinir.<br>
         • Bir hücreye iki kişi yazmak için <b>Shift</b>'e basılı tutup tıkla.<br>
         • Yarım gün, özel saat gibi durumlar için hücreye <b>sağ tıkla</b>.<br>
         • Silmek için <b>Silgi</b>'yi seç, hücreye tıkla.
@@ -397,7 +404,7 @@ function cellHTML(cell, ci) {
     const s = staffById(a.s);
     if (!s) return '';
     const custom = a.a && a.b && (a.a !== col.start || a.b !== col.end);
-    return `<span class="p" style="--c:${s.color}">${esc(s.name)}${custom ? ` <span class="tm">(${esc(a.a)}-${esc(a.b)})</span>` : ''}</span>`;
+    return `<span class="p" data-s="${s.id}" style="--c:${s.color}">${esc(s.name)}${custom ? ` <span class="tm">(${esc(a.a)}-${esc(a.b)})</span>` : ''}</span>`;
   }).filter(Boolean).join('-');
 }
 function cellClass(cell, ci) {
@@ -547,16 +554,171 @@ function applyBrush(d, c, add) {
 }
 
 let painting = false, paintAdd = false, paintedAny = false;
-document.addEventListener('mousedown', e => {
-  const td = e.target.closest('td.cell');
-  if (!td || e.button !== 0) return;
-  e.preventDefault();
+function cellDown(td, e) {
   const d = +td.dataset.d, c = +td.dataset.c;
   if (!brush) return openCellEditor(d, c);
   snapshot();
   painting = true; paintAdd = addMode || e.shiftKey || e.metaKey || e.ctrlKey; paintedAny = false;
   if (applyBrush(d, c, paintAdd)) { paintedAny = true; updateCell(d, c); }
+}
+document.addEventListener('mousedown', e => {
+  const td = e.target.closest('td.cell');
+  if (!td || e.button !== 0) return;
+  e.preventDefault();
+  if (e.target.closest('.p')) return;
+  cellDown(td, e);
 });
+
+/* ---------- Drag & drop ---------- */
+let pend = null, drag = null, dragXY = null, dragRAF = 0, suppressClick = false;
+
+function dragSource(t) {
+  const chip = t.closest('#palette .chip');
+  if (chip && staffById(chip.dataset.id) && !t.closest('.act')) return { kind: 'chip', s: chip.dataset.id };
+  const p = t.closest('td.cell .p'), td = t.closest('td.cell');
+  if (p && td && staffById(p.dataset.s)) return { kind: 'cell', s: p.dataset.s, d: +td.dataset.d, c: +td.dataset.c, td };
+  return null;
+}
+
+function startDrag(x, y) {
+  drag = pend; pend = null;
+  const s = staffById(drag.s);
+  drag.ghost = document.createElement('div');
+  drag.ghost.className = 'dragghost';
+  drag.ghost.style.setProperty('--c', s.color);
+  drag.ghost.textContent = s.name;
+  document.body.appendChild(drag.ghost);
+  document.body.classList.add('dragging');
+  moveDrag(x, y);
+  dragRAF = requestAnimationFrame(autoScroll);
+}
+
+function dropTarget(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const td = el.closest('td.cell');
+  if (td) return td;
+  return drag.kind === 'cell' && el.closest('#palette') ? $('palette') : null;
+}
+
+function moveDrag(x, y) {
+  dragXY = [x, y];
+  drag.ghost.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+  const t = dropTarget(x, y);
+  if (t !== drag.over) {
+    drag.over?.classList.remove('dropover');
+    t?.classList.add('dropover');
+    drag.over = t;
+  }
+}
+
+function autoScroll() {
+  if (!drag) return;
+  const [x, y] = dragXY, edge = 70;
+  const dy = y < edge ? -12 : y > innerHeight - edge - (innerWidth <= 900 ? 70 : 0) ? 12 : 0;
+  if (dy) { scrollBy(0, dy); moveDrag(x, y); }
+  dragRAF = requestAnimationFrame(autoScroll);
+}
+
+function endDrag(x, y, add) {
+  const src = drag, t = dropTarget(x, y);
+  drag.over?.classList.remove('dropover');
+  drag.ghost.remove();
+  document.body.classList.remove('dragging');
+  cancelAnimationFrame(dragRAF);
+  drag = null;
+  suppressClick = true; setTimeout(() => suppressClick = false, 0);
+  if (!t) return;
+  const M = getMonth();
+  if (t.id === 'palette') {
+    snapshot();
+    M[src.d][src.c] = M[src.d][src.c].filter(a => a.s !== src.s);
+    updateCell(src.d, src.c); save(); renderSummary();
+    return toast(`${staffById(src.s).name} çıkarıldı`);
+  }
+  const d = +t.dataset.d, c = +t.dataset.c;
+  if (src.kind === 'cell' && src.d === d && src.c === c) return;
+  snapshot();
+  const strip = (a, col) => (a.a && col === c ? { s: a.s, a: a.a, b: a.b } : { s: a.s });
+  if (src.kind === 'chip') {
+    if (add) { if (!M[d][c].some(a => a.s === src.s)) M[d][c].push({ s: src.s }); }
+    else M[d][c] = [{ s: src.s }];
+  } else {
+    const from = M[src.d][src.c], entry = from.find(a => a.s === src.s);
+    const moved = strip(entry, src.c);
+    const rest = from.filter(a => a !== entry);
+    if (add) {
+      M[src.d][src.c] = rest;
+      if (!M[d][c].some(a => a.s === src.s)) M[d][c].push(moved);
+    } else {
+      const back = M[d][c].filter(a => a.s !== src.s && !rest.some(r => r.s === a.s)).map(a => ({ s: a.s }));
+      M[src.d][src.c] = [...rest, ...back];
+      M[d][c] = [moved];
+      if (back.length) toast('Yer değiştirildi');
+    }
+    updateCell(src.d, src.c);
+  }
+  updateCell(d, c); save(); renderSummary();
+}
+
+function cancelDrag() {
+  if (!drag) return;
+  drag.over?.classList.remove('dropover');
+  drag.ghost.remove();
+  document.body.classList.remove('dragging');
+  cancelAnimationFrame(dragRAF);
+  drag = null;
+}
+
+document.addEventListener('mousedown', e => {
+  if (e.button !== 0 || e.target.closest('#modal')) return;
+  const src = dragSource(e.target);
+  if (src) pend = { ...src, x: e.clientX, y: e.clientY, mouse: true };
+}, true);
+document.addEventListener('mousemove', e => {
+  if (pend?.mouse && Math.hypot(e.clientX - pend.x, e.clientY - pend.y) > 6) startDrag(e.clientX, e.clientY);
+  else if (drag) moveDrag(e.clientX, e.clientY);
+});
+document.addEventListener('mouseup', e => {
+  if (drag) return endDrag(e.clientX, e.clientY, addMode || e.shiftKey || e.metaKey || e.ctrlKey);
+  if (pend?.mouse) {
+    const p = pend; pend = null;
+    if (p.kind === 'cell') cellDown(p.td, e);
+  }
+}, true);
+document.addEventListener('click', e => {
+  if (suppressClick) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+
+let touchTimer = 0;
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1 || e.target.closest('#modal')) return;
+  const src = dragSource(e.target);
+  if (!src) return;
+  const t = e.touches[0];
+  pend = { ...src, x: t.clientX, y: t.clientY };
+  clearTimeout(touchTimer);
+  touchTimer = setTimeout(() => {
+    if (!pend || pend.mouse) return;
+    navigator.vibrate?.(30);
+    startDrag(pend.x, pend.y);
+  }, 350);
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  const t = e.touches[0];
+  if (drag) { e.preventDefault(); return moveDrag(t.clientX, t.clientY); }
+  if (pend && !pend.mouse && Math.hypot(t.clientX - pend.x, t.clientY - pend.y) > 8) { clearTimeout(touchTimer); pend = null; }
+}, { passive: false });
+document.addEventListener('touchend', e => {
+  clearTimeout(touchTimer);
+  if (drag) {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    return endDrag(t.clientX, t.clientY, addMode);
+  }
+  if (!pend?.mouse) pend = null;
+}, { passive: false });
+document.addEventListener('touchcancel', () => { clearTimeout(touchTimer); pend = null; cancelDrag(); });
 document.addEventListener('mouseover', e => {
   if (!painting || paintAdd) return;
   const td = e.target.closest('td.cell');
@@ -570,6 +732,7 @@ document.addEventListener('mouseup', () => {
   if (paintedAny) { save(); renderSummary(); } else history.pop();
 });
 document.addEventListener('contextmenu', e => {
+  if (drag || (pend && !pend.mouse)) return e.preventDefault();
   const td = e.target.closest('td.cell');
   if (!td) return;
   e.preventDefault();
