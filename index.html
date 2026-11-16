@@ -144,6 +144,26 @@
   .dshort{display:none}
   .tablewrap{overflow-x:auto}
   .chip.addmode .nm{font-weight:500;font-size:12px}
+  .tplsel{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
+  body[data-tpl=servis] .sheet{width:297mm;min-height:210mm;padding:6mm}
+  body[data-tpl=servis] table.grid{font-size:7.5pt;table-layout:fixed}
+  body[data-tpl=servis] table.grid td,body[data-tpl=servis] table.grid th{padding:1px 1px;height:6mm}
+  body[data-tpl=servis] table.grid td.cell{font-size:8pt}
+  body[data-tpl=servis] table.grid td.name{text-align:left;font-size:8pt;font-weight:600;padding-left:3px}
+  body[data-tpl=servis] table.grid td.branch{text-align:left;font-size:7pt;padding-left:2px}
+  body[data-tpl=servis] table.grid td.num{font-size:8pt;font-weight:700}
+  body[data-tpl=servis] table.grid .wd{font-size:6.5pt;font-weight:700}
+  body[data-tpl=servis] table.grid .dn{font-size:7pt}
+  body[data-tpl=servis] table.grid .headmeta{font-size:8pt;white-space:pre-line;line-height:1.25;text-align:left}
+  body[data-tpl=servis] table.grid .title{font-size:12pt}
+  body[data-tpl=servis] .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:9pt;margin-top:3mm}
+  body[data-tpl=servis] .legend b{display:inline-block;min-width:18px;border:1px solid #000;text-align:center;margin-right:4px;padding:0 3px}
+  body[data-tpl=servis] .chip.val .nm{font-weight:700}
+  body[data-tpl=servis] .chip.val.code{background:#fff7ed;border-color:#fed7aa}
+  @media screen{
+    body[data-tpl=servis] table.grid td.cell.leave{background:#fff7ed}
+    body[data-tpl=servis] table.grid td.cell.over{color:#b45309}
+  }
 
   @media screen and (max-width: 900px){
     body{font-size:15px;padding-bottom:84px}
@@ -166,6 +186,10 @@
     .chip .nm{white-space:nowrap}
 
     .sheet{width:100%;min-height:0;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    body[data-tpl=servis] .main{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    body[data-tpl=servis] .sheet{width:max-content;min-width:100%;max-width:none}
+    body[data-tpl=servis] table.grid{font-size:9px;min-width:920px}
+    body[data-tpl=servis] table.grid td.cell{font-size:9px}
     table.grid{font-size:10px}
     table.grid col:nth-child(1){width:22px!important}
     table.grid col:nth-child(2){width:50px!important}
@@ -195,12 +219,14 @@
   }
 
   @page{size:A4 portrait;margin:8mm}
+  @page servis{size:A4 landscape;margin:6mm}
   @media print{
     body{background:#fff}
     .topbar,.side,.modal,.toast{display:none!important}
     .layout{display:block;padding:0}
     .sheet{box-shadow:none;width:auto;min-height:0;padding:0;margin:0}
     .print-summary{break-before:page}
+    body[data-tpl=servis] .sheet{page:servis}
   }
   .print-summary{display:none}
   @media print{ .print-summary.on{display:block} }
@@ -214,11 +240,16 @@
 
 <div class="topbar">
   <h1>Nöbet Listesi</h1>
+  <select id="tpl" class="tplsel" title="Liste türü">
+    <option value="acil">Acil Servis</option>
+    <option value="servis">Servis / Birim</option>
+  </select>
   <button id="prevM" title="Önceki ay">◀</button>
   <input type="month" id="month">
   <button id="nextM" title="Sonraki ay">▶</button>
-  <button id="btnPlan" class="primary">📅 Akıllı Planla</button>
-  <button id="btnAuto">⚡ Sıralı Doldur</button>
+  <button id="btnPlan" class="primary acil-only">📅 Akıllı Planla</button>
+  <button id="btnAuto" class="acil-only">⚡ Sıralı Doldur</button>
+  <button id="btnFillWeek" class="servis-only" hidden>⚡ Hafta içi doldur</button>
   <button id="btnCopyPrev">Önceki Ayı Kopyala</button>
   <button id="btnUndo" title="Ctrl/Cmd + Z">↶ Geri Al</button>
   <button id="btnClear" class="danger">Ayı Temizle</button>
@@ -239,12 +270,18 @@
         <input type="text" id="newStaff" placeholder="Ad Soyad (virgülle birden fazla)">
         <button id="addStaff">Ekle</button>
       </div>
-      <div class="hint">
+      <div class="hint" id="hintAcil">
         • Kişiye tıkla, sonra tablodaki hücreye tıkla.<br>
         • Ya da ismi tutup tablodaki hücreye <b>sürükle</b>. Tablodaki bir ismi başka hücreye sürüklersen yer değiştirir, bu listeye geri sürüklersen silinir.<br>
         • Bir hücreye iki kişi yazmak için <b>Shift</b>'e basılı tutup tıkla.<br>
         • Yarım gün, özel saat gibi durumlar için hücreye <b>sağ tıkla</b>.<br>
         • Silmek için <b>Silgi</b>'yi seç, hücreye tıkla.
+      </div>
+      <div class="hint" id="hintServis" hidden>
+        • Saat veya izin koduna tıkla, sonra tablodaki hücrelere tıkla / sürükle.<br>
+        • Özel değer için hücreye <b>sağ tıkla</b> veya <b>Özel…</b>'i seç.<br>
+        • Personelde ✎ ile branş ve hedef saati düzenle.<br>
+        • Silmek için <b>Silgi</b>'yi seç.
       </div>
     </div>
     <div class="card">
@@ -266,17 +303,52 @@
 const STORE_KEY = 'nobetPanel_v1';
 const DAYS = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 const DAYS_SHORT = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+/* Excel formundaki gün kısaltmaları: Pazar/Perşembe = P */
+const DAYS_FORM = ['P', 'PT', 'S', 'Ç', 'P', 'C', 'CT'];
 const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9'];
+const SERVIS_NOTE = 'Not: Bu listenin fazla mesai saati veya Nöbet parası ödenmesine esas kullanılmaması var ise resmi izin, yıllık izin veya mevzuat gereği düşülmesi gereken izinler var ise düşüldükden sonra ödemenin yapılması gerekmektedir.';
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const up = s => (s || '').toLocaleUpperCase('tr-TR').trim();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const $ = id => document.getElementById(id);
+const isServis = () => S.tpl === 'servis';
+
+function servisDefaults() {
+  return {
+    settings: {
+      header: 'T. C.\nSAĞLIK BAKANLIĞI\nYOZGAT İL SAĞLIK MÜDÜRLÜĞÜ',
+      institution: 'AKDAĞMADENİ ŞEHİT SİNAN BABACAN DEVLET HASTANESİ',
+      title: 'AYLIK ÇALIŞMA ÇİZELGESİ',
+      unit: '',
+      defaultTarget: 176,
+      defaultHours: 8,
+      note: SERVIS_NOTE,
+      logo: '',
+      shadeWeekend: true,
+      printSummary: false,
+      signatures: [
+        { title: 'BİRİM SORUMLUSU', name: '' },
+        { title: 'BAŞHEKİM', name: '' },
+      ],
+      codes: [
+        { code: 'Yİ', label: 'Yıllık izin' },
+        { code: 'Dİ', label: 'Doğum İzni' },
+        { code: 'GG', label: 'Geçici Görevli' },
+      ],
+      hours: [8, 16, 24],
+    },
+    staff: [],
+    months: {},
+  };
+}
 
 function defaults() {
   let d;
   const names = ['SAİT İPEK','BERAT BAYAZIT','EMRE KAYALI','HİLAL DURAN','TOLGA AYAZ','NURCAN HAMARTA','ZEYNEP ÜNLÜ','BİLGE KARATAŞ','NURCAN AVCI','AYSEL AKYÜZ','ERCAN FİLİZ'];
   const now = new Date();
   d = {
+    tpl: 'acil',
     cur: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
     settings: {
       institution: 'AKDAĞMADENİ ŞEHİT SİNAN BABACAN DEVLET HASTANESİ',
@@ -296,6 +368,7 @@ function defaults() {
     },
     staff: names.map((n, i) => ({ id: uid(), name: n, color: COLORS[i % COLORS.length] })),
     months: {},
+    servis: servisDefaults(),
   };
   const byCode = { S: 0, B: 1, E: 2, H: 3, T: 4, NH: 5, Z: 6, BK: 7, NA: 8, A: 9, EF: 10 };
   d.months['2026-10'] = DEFAULT_OCTOBER.trim().split('\n').map(row =>
@@ -343,8 +416,17 @@ function load() {
       const d = JSON.parse(raw), def = defaults();
       d.settings = { ...def.settings, ...d.settings };
       d.months ||= {}; d.staff ||= []; d.cur ||= def.cur;
+      d.tpl = d.tpl === 'servis' ? 'servis' : 'acil';
+      const sd = servisDefaults();
+      d.servis = d.servis || sd;
+      d.servis.settings = { ...sd.settings, ...(d.servis.settings || {}) };
+      d.servis.settings.codes ||= sd.settings.codes;
+      d.servis.settings.hours ||= sd.settings.hours;
+      d.servis.settings.signatures ||= sd.settings.signatures;
+      d.servis.staff ||= [];
+      d.servis.months ||= {};
       const hasData = Object.values(d.months).some(M => M.some(r => r.some(c => c.length)));
-      if (!d.staff.length && !hasData) return { ...def, settings: d.settings, cur: d.cur };
+      if (!d.staff.length && !hasData && !(d.servis.staff || []).length) return { ...def, settings: d.settings, cur: d.cur };
       return d;
     }
   } catch (e) { console.error(e); }
@@ -358,7 +440,9 @@ const history = [];
 
 const cols = () => S.settings.columns;
 const colLabel = c => `${c.start}-${c.end}`;
-const staffById = id => S.staff.find(s => s.id === id);
+const staffList = () => isServis() ? S.servis.staff : S.staff;
+const staffById = id => staffList().find(s => s.id === id);
+const stCur = () => isServis() ? S.servis.settings : S.settings;
 const ym = (k = S.cur) => k.split('-').map(Number);
 const daysIn = (k = S.cur) => { const [y, m] = ym(k); return new Date(y, m, 0).getDate(); };
 const dateOf = (d, k = S.cur) => { const [y, m] = ym(k); return new Date(y, m - 1, d + 1); };
@@ -381,15 +465,42 @@ function duration(a, b) {
 }
 
 function snapshot() {
-  history.push({ k: S.cur, data: JSON.stringify(S.months[S.cur] || []) });
+  const data = isServis()
+    ? JSON.stringify(S.servis.months[S.cur] || {})
+    : JSON.stringify(S.months[S.cur] || []);
+  history.push({ k: S.cur, tpl: S.tpl || 'acil', data });
   if (history.length > 80) history.shift();
 }
 function undo() {
   const h = history.pop();
   if (!h) return toast('Geri alınacak işlem yok');
-  S.months[h.k] = JSON.parse(h.data);
+  S.tpl = h.tpl || 'acil';
   S.cur = h.k;
+  if (h.tpl === 'servis') S.servis.months[h.k] = JSON.parse(h.data);
+  else S.months[h.k] = JSON.parse(h.data);
   save(); renderAll();
+}
+
+function getServisMonth(k = S.cur) {
+  const n = daysIn(k), st = S.servis.settings;
+  const M = S.servis.months[k] ||= {};
+  for (const s of S.servis.staff) {
+    const row = M[s.id] ||= { days: [], target: st.defaultTarget };
+    while (row.days.length < n) row.days.push('');
+    row.days.length = n;
+    if (row.target == null || row.target === '') row.target = st.defaultTarget;
+  }
+  return M;
+}
+function cellHours(v) {
+  if (v === '' || v == null) return 0;
+  const n = Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+}
+function isLeaveCode(v) {
+  if (!v) return false;
+  const codes = (S.servis?.settings?.codes || []).map(c => up(c.code));
+  return codes.includes(up(String(v))) || /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(String(v)) && !Number.isFinite(Number(String(v).replace(',', '.')));
 }
 
 function toast(msg) {
@@ -415,6 +526,7 @@ function cellClass(cell, ci) {
 }
 
 function renderSheet() {
+  if (isServis()) return renderServisSheet();
   const st = S.settings, M = getMonth(), C = cols();
   const logo = st.logo ? `<img src="${st.logo}" alt="">` : `<div class="inst">${esc(st.institution)}</div>`;
   let rows = '';
@@ -443,6 +555,78 @@ function renderSheet() {
     <div class="sigs">${sigs}</div>`;
 }
 
+function renderServisSheet() {
+  const st = S.servis.settings, n = daysIn(), M = getServisMonth(), [y, m] = ym();
+  const monthName = MONTHS[m - 1].toLocaleUpperCase('tr-TR');
+  const unit = st.unit ? up(st.unit) : '………………';
+  const sub = `${y} YILI ${monthName} AYI ${unit} BİRİM / SERVİSE AİT ÇALIŞMA / NÖBET LİSTESİ`;
+  const head = st.logo
+    ? `<img src="${st.logo}" alt="" style="max-height:18mm">`
+    : `<div class="headmeta">${esc(st.header)}\n${esc(st.institution)}</div>`;
+  const dayHeads = Array.from({ length: n }, (_, d) => {
+    const wd = dateOf(d).getDay();
+    return `<th><div class="wd">${DAYS_FORM[wd]}</div><div class="dn">${d + 1}</div></th>`;
+  }).join('');
+  const weClass = d => (st.shadeWeekend && [0, 6].includes(dateOf(d).getDay()) ? ' we' : '');
+  let body = '';
+  S.servis.staff.forEach((s, i) => {
+    const row = M[s.id];
+    const total = row.days.reduce((t, v) => t + cellHours(v), 0);
+    const over = total - (+row.target || 0);
+    const cells = row.days.map((v, d) => {
+      const leave = isLeaveCode(v);
+      const empty = v === '' || v == null;
+      return `<td class="cell${empty ? ' empty' : ''}${leave ? ' leave' : ''}${weClass(d)}" data-sid="${s.id}" data-d="${d}">${empty ? '' : esc(v)}</td>`;
+    }).join('');
+    body += `<tr>
+      <td class="sn">${i + 1}</td>
+      <td class="name">${esc(s.name)}</td>
+      <td class="branch">${esc(s.branch || '')}</td>
+      ${cells}
+      <td class="num" data-target="${s.id}" title="Hedef saati değiştir">${esc(row.target)}</td>
+      <td class="num">${(Math.round(total * 10) / 10).toString().replace('.', ',')}</td>
+      <td class="num${over > 0.05 ? ' over' : ''}">${(Math.round(over * 10) / 10).toString().replace('.', ',')}</td>
+    </tr>`;
+  });
+  if (!S.servis.staff.length) {
+    body = `<tr><td colspan="${n + 6}" style="padding:12px;color:#666">Personel ekleyerek başla. Soldaki kutuya ad soyad yazıp Ekle'ye bas.</td></tr>`;
+  }
+  const legend = `<div class="legend"><span><b>?</b> Açıklama</span>${st.codes.map(c => `<span><b>${esc(c.code)}</b>${esc(c.label)}</span>`).join('')}</div>`;
+  const sigs = st.signatures.filter(s => s.title || s.name).map(s =>
+    `<div><div class="t">${esc(s.title || 'Ad Soyad İmza')}</div><div class="space"></div><div class="n">${esc(s.name)}</div></div>`).join('');
+  $('sheet').innerHTML = `
+    <table class="grid">
+      <colgroup>
+        <col style="width:7mm"><col style="width:32mm"><col style="width:16mm">
+        ${Array.from({ length: n }, () => '<col>').join('')}
+        <col style="width:14mm"><col style="width:14mm"><col style="width:14mm">
+      </colgroup>
+      <thead>
+        <tr><td class="logo" colspan="3">${head}</td>
+            <td class="title" colspan="${n + 3}">${esc(st.title)}<small style="display:block;font-size:8pt;font-weight:600;margin-top:2px">${esc(sub)}</small></td></tr>
+        <tr class="colh">
+          <th rowspan="1">SIRA NO</th><th>ADI SOYADI</th><th>Branş</th>
+          ${dayHeads}
+          <th>Çalışılması gereken</th><th>Çalışılan saat</th><th>Fazla / Nöbet</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>
+    ${st.note ? `<div class="note">${esc(st.note)}</div>` : ''}
+    ${legend}
+    <div class="sigs">${sigs}</div>`;
+}
+
+function updateServisCell(sid, d) {
+  const td = document.querySelector(`td.cell[data-sid="${sid}"][data-d="${d}"]`);
+  if (!td) return;
+  const v = getServisMonth()[sid].days[d];
+  const leave = isLeaveCode(v);
+  const empty = v === '' || v == null;
+  td.className = `cell${empty ? ' empty' : ''}${leave ? ' leave' : ''}${S.servis.settings.shadeWeekend && [0, 6].includes(dateOf(d).getDay()) ? ' we' : ''}`;
+  td.textContent = empty ? '' : v;
+}
+
 function updateCell(d, c) {
   const td = document.querySelector(`td.cell[data-d="${d}"][data-c="${c}"]`);
   if (!td) return;
@@ -452,6 +636,7 @@ function updateCell(d, c) {
 }
 
 function renderPalette() {
+  if (isServis()) return renderServisPalette();
   const items = S.staff.map((s, i) => `
     <div class="chip ${brush === s.id ? 'active' : ''}" data-id="${s.id}">
       <span class="dot" style="background:${s.color}"></span>
@@ -466,6 +651,31 @@ function renderPalette() {
     <div class="chip addmode ${addMode ? 'active' : ''}" data-id="addmode" title="Açıkken tıkladığın kişi hücreye ikinci kişi olarak eklenir">
       <span class="nm">➕ İkinci kişi ekle</span>
     </div>`;
+}
+
+function renderServisPalette() {
+  const st = S.servis.settings;
+  const vals = [
+    ...st.hours.map(h => ({ id: `v:${h}`, label: String(h), cls: 'val' })),
+    ...st.codes.map(c => ({ id: `v:${c.code}`, label: c.code, cls: 'val code', title: c.label })),
+    { id: 'v:custom', label: 'Özel…', cls: 'val' },
+    { id: 'erase', label: 'Silgi', cls: 'erase' },
+  ];
+  const valueChips = vals.map(v => `
+    <div class="chip ${v.cls} ${brush === v.id ? 'active' : ''}" data-id="${v.id}" title="${esc(v.title || v.label)}">
+      ${v.id === 'erase' ? '<span class="dot"></span>' : ''}
+      <span class="nm">${esc(v.label)}</span>
+    </div>`).join('');
+  const people = S.servis.staff.map((s, i) => `
+    <div class="chip" data-id="${s.id}" data-person="1">
+      <span class="dot" style="background:${s.color}"></span>
+      <span class="nm">${esc(s.name)}${s.branch ? ` <span style="color:var(--muted);font-weight:500">· ${esc(s.branch)}</span>` : ''}</span>
+      <span class="act"><span data-act="edit" title="Düzenle">✎</span><span data-act="col" title="Renk">●</span><span data-act="del" title="Sil">✕</span></span>
+    </div>`).join('');
+  $('palette').innerHTML =
+    '<div class="hint" style="margin:0 0 6px">Değer seç, hücreye yaz</div>' + valueChips +
+    '<div class="hint" style="margin:10px 0 6px">Personel</div>' +
+    (people || '<div class="hint" style="margin:0">Henüz personel yok. Aşağıya ad yazıp Ekle.</div>') + people;
 }
 
 function computeStats(k = S.cur) {
@@ -488,6 +698,7 @@ function computeStats(k = S.cur) {
 }
 
 function renderSummary() {
+  if (isServis()) return renderServisSummary();
   const { stats, empty } = computeStats();
   const fmt = h => (Math.round(h * 10) / 10).toString().replace('.', ',');
   const rows = S.staff.map(s => ({ s, x: stats.get(s.id) })).filter(r => r.x.n).sort((a, b) => b.x.h - a.x.h);
@@ -514,6 +725,36 @@ function renderSummary() {
     ${rows.map(r => `<tr><td>${esc(r.s.name)}</td><td>${r.x.n}</td><td>${r.x.days.size}</td><td>${r.x.we}</td><td>${fmt(r.x.h)}</td></tr>`).join('')}</table>`;
 }
 
+function renderServisSummary() {
+  const M = getServisMonth(), fmt = h => (Math.round(h * 10) / 10).toString().replace('.', ',');
+  const rows = S.servis.staff.map(s => {
+    const row = M[s.id] || { days: [], target: S.servis.settings.defaultTarget };
+    const h = row.days.reduce((t, v) => t + cellHours(v), 0);
+    const leave = row.days.filter(isLeaveCode).length;
+    const filled = row.days.filter(v => v !== '' && v != null).length;
+    const over = h - (+row.target || 0);
+    return { s, h, leave, filled, target: +row.target || 0, over };
+  });
+  const totalH = rows.reduce((t, r) => t + r.h, 0);
+  const totalT = rows.reduce((t, r) => t + r.target, 0);
+  $('summary').innerHTML = (rows.length ? `
+    <table class="sum">
+      <tr><th>Personel</th><th>Dolu</th><th>İzin</th><th>Saat</th><th>Hedef</th><th>+/−</th></tr>
+      ${rows.map(r => `<tr>
+        <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.s.color}"></span> ${esc(r.s.name)}</td>
+        <td>${r.filled}</td><td>${r.leave}</td><td><b>${fmt(r.h)}</b></td><td>${fmt(r.target)}</td>
+        <td style="color:${Math.abs(r.over) < 0.05 ? 'var(--ok)' : r.over > 0 ? '#b45309' : 'var(--danger)'}">${r.over > 0 ? '+' : ''}${fmt(r.over)}</td>
+      </tr>`).join('')}
+      <tr><td><b>Toplam</b></td><td></td><td></td><td><b>${fmt(totalH)}</b></td><td>${fmt(totalT)}</td><td></td></tr>
+    </table>` : '<div class="hint">Personel ekleyip saat / izin kodu yaz.</div>');
+  const ps = $('printSummary');
+  ps.classList.toggle('on', !!S.servis.settings.printSummary);
+  const [y, m] = ym();
+  ps.innerHTML = `<h3>${esc(S.servis.settings.title)} – ${MONTHS[m - 1] || m} ${y} ÖZET</h3>
+    <table><tr><th>Personel</th><th>Branş</th><th>Çalışılan Saat</th><th>Hedef</th><th>Fazla / Nöbet</th></tr>
+    ${rows.map(r => `<tr><td>${esc(r.s.name)}</td><td>${esc(r.s.branch || '')}</td><td>${fmt(r.h)}</td><td>${fmt(r.target)}</td><td>${fmt(r.over)}</td></tr>`).join('')}</table>`;
+}
+
 const hasCells = M => !!M && M.some(r => r.some(c => c.length));
 
 function seedMonth(k = S.cur) {
@@ -531,7 +772,15 @@ function seedMonth(k = S.cur) {
 }
 
 function renderAll() {
-  seedMonth();
+  S.tpl = S.tpl === 'servis' ? 'servis' : 'acil';
+  document.body.dataset.tpl = S.tpl;
+  $('tpl').value = S.tpl;
+  document.querySelectorAll('.acil-only').forEach(el => { el.hidden = isServis(); });
+  document.querySelectorAll('.servis-only').forEach(el => { el.hidden = !isServis(); });
+  if ($('hintAcil')) $('hintAcil').hidden = isServis();
+  if ($('hintServis')) $('hintServis').hidden = !isServis();
+  if (!isServis()) seedMonth();
+  else getServisMonth();
   $('month').value = S.cur;
   renderPalette(); renderSheet(); renderSummary();
 }
@@ -554,7 +803,42 @@ function applyBrush(d, c, add) {
 }
 
 let painting = false, paintAdd = false, paintedAny = false;
+function brushValue() {
+  if (!brush || brush === 'erase') return null;
+  if (String(brush).startsWith('v:')) return String(brush).slice(2);
+  return null;
+}
+function applyServisBrush(sid, d) {
+  const row = getServisMonth()[sid];
+  if (!row) return false;
+  if (brush === 'erase') {
+    if (row.days[d] === '') return false;
+    row.days[d] = '';
+    return true;
+  }
+  let val = brushValue();
+  if (val === 'custom') {
+    const cur = row.days[d] || '';
+    const n = prompt('Hücreye yazılacak değer (saat veya kod):', cur);
+    if (n == null) return false;
+    val = up(n);
+    brush = val ? `v:${val}` : brush;
+  }
+  if (val == null) return false;
+  if (row.days[d] === val) return false;
+  row.days[d] = val;
+  return true;
+}
 function cellDown(td, e) {
+  if (isServis()) {
+    const sid = td.dataset.sid, d = +td.dataset.d;
+    if (!sid) return;
+    if (!brush) return openServisCellEditor(sid, d);
+    snapshot();
+    painting = true; paintAdd = false; paintedAny = false;
+    if (applyServisBrush(sid, d)) { paintedAny = true; updateServisCell(sid, d); }
+    return;
+  }
   const d = +td.dataset.d, c = +td.dataset.c;
   if (!brush) return openCellEditor(d, c);
   snapshot();
@@ -562,6 +846,17 @@ function cellDown(td, e) {
   if (applyBrush(d, c, paintAdd)) { paintedAny = true; updateCell(d, c); }
 }
 document.addEventListener('mousedown', e => {
+  if (e.target.closest('[data-target]') && isServis()) {
+    const sid = e.target.closest('[data-target]').dataset.target;
+    const row = getServisMonth()[sid];
+    if (!row) return;
+    const n = prompt('Bu ay çalışılması gereken saat:', row.target);
+    if (n == null || n === '') return;
+    const num = Number(String(n).replace(',', '.'));
+    if (!Number.isFinite(num)) return alert('Geçerli bir sayı yaz.');
+    snapshot(); row.target = num; save(); renderAll();
+    return;
+  }
   const td = e.target.closest('td.cell');
   if (!td || e.button !== 0) return;
   e.preventDefault();
@@ -573,6 +868,17 @@ document.addEventListener('mousedown', e => {
 let pend = null, drag = null, dragXY = null, dragRAF = 0, suppressClick = false;
 
 function dragSource(t) {
+  if (isServis()) {
+    const chip = t.closest('#palette .chip');
+    if (chip && String(chip.dataset.id || '').startsWith('v:') && chip.dataset.id !== 'v:custom' && !t.closest('.act'))
+      return { kind: 'schip', val: chip.dataset.id.slice(2), label: chip.querySelector('.nm')?.textContent || chip.dataset.id.slice(2) };
+    const td = t.closest('td.cell[data-sid]');
+    if (td) {
+      const v = getServisMonth()[td.dataset.sid]?.days[+td.dataset.d];
+      if (v) return { kind: 'scell', val: v, sid: td.dataset.sid, d: +td.dataset.d, td };
+    }
+    return null;
+  }
   const chip = t.closest('#palette .chip');
   if (chip && staffById(chip.dataset.id) && !t.closest('.act')) return { kind: 'chip', s: chip.dataset.id };
   const p = t.closest('td.cell .p'), td = t.closest('td.cell');
@@ -582,11 +888,16 @@ function dragSource(t) {
 
 function startDrag(x, y) {
   drag = pend; pend = null;
-  const s = staffById(drag.s);
   drag.ghost = document.createElement('div');
   drag.ghost.className = 'dragghost';
-  drag.ghost.style.setProperty('--c', s.color);
-  drag.ghost.textContent = s.name;
+  if (drag.kind === 'schip' || drag.kind === 'scell') {
+    drag.ghost.style.setProperty('--c', '#f59e0b');
+    drag.ghost.textContent = drag.label || drag.val;
+  } else {
+    const s = staffById(drag.s);
+    drag.ghost.style.setProperty('--c', s.color);
+    drag.ghost.textContent = s.name;
+  }
   document.body.appendChild(drag.ghost);
   document.body.classList.add('dragging');
   moveDrag(x, y);
@@ -629,6 +940,29 @@ function endDrag(x, y, add) {
   drag = null;
   suppressClick = true; setTimeout(() => suppressClick = false, 0);
   if (!t) return;
+  if (src.kind === 'schip' || src.kind === 'scell') {
+    if (t.id === 'palette') {
+      if (src.kind !== 'scell') return;
+      snapshot();
+      getServisMonth()[src.sid].days[src.d] = '';
+      save(); renderAll();
+      return toast('Değer silindi');
+    }
+    const sid = t.dataset.sid, d = +t.dataset.d;
+    if (!sid) return;
+    if (src.kind === 'scell' && src.sid === sid && src.d === d) return;
+    snapshot();
+    const M = getServisMonth();
+    if (src.kind === 'schip') M[sid].days[d] = src.val;
+    else if (add) M[sid].days[d] = src.val;
+    else {
+      const tmp = M[sid].days[d];
+      M[sid].days[d] = src.val;
+      M[src.sid].days[src.d] = tmp;
+    }
+    save(); renderAll();
+    return;
+  }
   const M = getMonth();
   if (t.id === 'palette') {
     snapshot();
@@ -683,7 +1017,7 @@ document.addEventListener('mouseup', e => {
   if (drag) return endDrag(e.clientX, e.clientY, addMode || e.shiftKey || e.metaKey || e.ctrlKey);
   if (pend?.mouse) {
     const p = pend; pend = null;
-    if (p.kind === 'cell') cellDown(p.td, e);
+    if (p.kind === 'cell' || p.kind === 'scell') cellDown(p.td, e);
   }
 }, true);
 document.addEventListener('click', e => {
@@ -723,20 +1057,27 @@ document.addEventListener('mouseover', e => {
   if (!painting || paintAdd) return;
   const td = e.target.closest('td.cell');
   if (!td) return;
+  if (isServis()) {
+    const sid = td.dataset.sid, d = +td.dataset.d;
+    if (sid && applyServisBrush(sid, d)) { paintedAny = true; updateServisCell(sid, d); }
+    return;
+  }
   const d = +td.dataset.d, c = +td.dataset.c;
   if (applyBrush(d, c, false)) { paintedAny = true; updateCell(d, c); }
 });
 document.addEventListener('mouseup', () => {
   if (!painting) return;
   painting = false;
-  if (paintedAny) { save(); renderSummary(); } else history.pop();
+  if (paintedAny) { save(); if (isServis()) { renderSheet(); renderSummary(); } else renderSummary(); }
+  else history.pop();
 });
 document.addEventListener('contextmenu', e => {
   if (drag || (pend && !pend.mouse)) return e.preventDefault();
   const td = e.target.closest('td.cell');
   if (!td) return;
   e.preventDefault();
-  openCellEditor(+td.dataset.d, +td.dataset.c);
+  if (isServis()) openServisCellEditor(td.dataset.sid, +td.dataset.d);
+  else openCellEditor(+td.dataset.d, +td.dataset.c);
 });
 
 /* ---------- Modal helpers ---------- */
@@ -796,11 +1137,75 @@ function openCellEditor(d, c) {
   draw();
 }
 
+function openServisCellEditor(sid, d) {
+  const s = staffById(sid); if (!s) return;
+  const row = getServisMonth()[sid];
+  const dt = dateOf(d);
+  const codes = S.servis.settings.codes;
+  const hours = S.servis.settings.hours;
+  openModal(`
+    <h2>${esc(s.name)} · ${dt.toLocaleDateString('tr-TR')} ${DAYS[dt.getDay()]}</h2>
+    <div class="frow"><label>Değer</label><input type="text" id="svVal" value="${esc(row.days[d] || '')}" placeholder="8 / 16 / Yİ…" style="flex:1"></div>
+    <div class="quick">
+      ${hours.map(h => `<button data-v="${h}">${h}</button>`).join('')}
+      ${codes.map(c => `<button data-v="${esc(c.code)}" title="${esc(c.label)}">${esc(c.code)}</button>`).join('')}
+      <button data-v="">Boş</button>
+    </div>
+    <div class="foot"><button id="svCancel">İptal</button><button class="primary" id="svSave">Kaydet</button></div>`);
+  $('modalBox').querySelectorAll('[data-v]').forEach(el => el.onclick = () => { $('svVal').value = el.dataset.v; });
+  $('svCancel').onclick = closeModal;
+  $('svSave').onclick = () => {
+    snapshot();
+    row.days[d] = up($('svVal').value);
+    save(); closeModal(); renderAll();
+  };
+  setTimeout(() => $('svVal').focus(), 0);
+}
+
+function openServisPersonEditor(s) {
+  const row = getServisMonth()[s.id];
+  openModal(`
+    <h2>Personel</h2>
+    <div class="frow"><label>Ad Soyad</label><input type="text" id="spName" value="${esc(s.name)}" style="flex:1"></div>
+    <div class="frow"><label>Branş</label><input type="text" id="spBranch" value="${esc(s.branch || '')}" style="flex:1" placeholder="Örn. Hemşire"></div>
+    <div class="frow"><label>Hedef saat</label><input type="number" id="spTarget" value="${esc(row.target)}" style="width:100px"></div>
+    <div class="foot"><button id="spCancel">İptal</button><button class="primary" id="spSave">Kaydet</button></div>`);
+  $('spCancel').onclick = closeModal;
+  $('spSave').onclick = () => {
+    const n = up($('spName').value); if (!n) return alert('Ad soyad gerekli');
+    s.name = n; s.branch = up($('spBranch').value);
+    const t = Number($('spTarget').value);
+    if (Number.isFinite(t)) row.target = t;
+    save(); closeModal(); renderAll();
+  };
+}
+
 /* ---------- Staff management ---------- */
 $('palette').addEventListener('click', e => {
   const chip = e.target.closest('.chip');
   if (!chip) return;
   const id = chip.dataset.id, act = e.target.dataset.act;
+  if (isServis()) {
+    if (act === 'edit') return openServisPersonEditor(staffById(id));
+    if (act === 'col') {
+      const s = staffById(id); if (!s) return;
+      s.color = COLORS[(COLORS.indexOf(s.color) + 1) % COLORS.length];
+      save(); renderAll(); return;
+    }
+    if (act === 'del') {
+      const s = staffById(id); if (!s) return;
+      if (!confirm(`${s.name} silinsin mi?`)) return;
+      S.servis.staff = S.servis.staff.filter(x => x.id !== id);
+      Object.values(S.servis.months).forEach(M => { delete M[id]; });
+      save(); renderAll(); return;
+    }
+    if (chip.dataset.person) return openServisPersonEditor(staffById(id));
+    if (String(id).startsWith('v:') || id === 'erase') {
+      brush = brush === id ? null : id;
+      return renderPalette();
+    }
+    return;
+  }
   const s = staffById(id);
   if (act === 'ren') {
     const n = prompt('Yeni ad soyad:', s.name);
@@ -825,11 +1230,18 @@ $('palette').addEventListener('click', e => {
 function addStaff() {
   const names = $('newStaff').value.split(',').map(up).filter(Boolean);
   if (!names.length) return;
-  const fresh = names.filter(n => !S.staff.some(s => s.name === n));
-  if (!fresh.length) return toast('Bu isim zaten var');
-  fresh.forEach(n => S.staff.push({ id: uid(), name: n, color: COLORS[S.staff.length % COLORS.length] }));
+  if (isServis()) {
+    const fresh = names.filter(n => !S.servis.staff.some(s => s.name === n));
+    if (!fresh.length) return toast('Bu isim zaten var');
+    fresh.forEach(n => S.servis.staff.push({ id: uid(), name: n, color: COLORS[S.servis.staff.length % COLORS.length], branch: '' }));
+    getServisMonth();
+  } else {
+    const fresh = names.filter(n => !S.staff.some(s => s.name === n));
+    if (!fresh.length) return toast('Bu isim zaten var');
+    fresh.forEach(n => S.staff.push({ id: uid(), name: n, color: COLORS[S.staff.length % COLORS.length] }));
+  }
   $('newStaff').value = '';
-  save(); renderPalette();
+  save(); renderAll();
 }
 $('addStaff').onclick = addStaff;
 $('newStaff').addEventListener('keydown', e => { if (e.key === 'Enter') addStaff(); });
@@ -858,13 +1270,38 @@ $('month').addEventListener('change', e => { if (e.target.value) { S.cur = e.tar
 $('prevM').onclick = () => { S.cur = shiftMonth(S.cur, -1); save(); renderAll(); };
 $('nextM').onclick = () => { S.cur = shiftMonth(S.cur, 1); save(); renderAll(); };
 
+$('tpl').onchange = e => {
+  S.tpl = e.target.value === 'servis' ? 'servis' : 'acil';
+  brush = null; addMode = false; history.length = 0;
+  save(); renderAll();
+  toast(S.tpl === 'servis' ? 'Servis / Birim formu' : 'Acil Servis formu');
+};
+
 $('btnUndo').onclick = undo;
 $('btnClear').onclick = () => {
   if (!confirm('Bu ayın tüm atamaları silinsin mi? (Geri Al ile geri getirebilirsin)')) return;
-  snapshot(); S.months[S.cur] = []; save(); renderAll();
+  snapshot();
+  if (isServis()) {
+    const M = getServisMonth();
+    Object.values(M).forEach(r => { r.days = r.days.map(() => ''); });
+  } else S.months[S.cur] = [];
+  save(); renderAll();
 };
 $('btnCopyPrev').onclick = () => {
   const pk = shiftMonth(S.cur, -1);
+  if (isServis()) {
+    const P = S.servis.months[pk];
+    if (!P || !Object.values(P).some(r => (r.days || []).some(v => v !== '' && v != null))) return toast('Önceki ayda veri yok');
+    if (!confirm('Önceki ayın saat/izin değerleri bu aya kopyalansın mı? (Aynı gün numarasına)')) return;
+    snapshot();
+    const M = getServisMonth(), n = daysIn();
+    S.servis.staff.forEach(s => {
+      const src = P[s.id]; if (!src) return;
+      M[s.id].days = Array.from({ length: n }, (_, d) => src.days[d] || '');
+      if (src.target != null) M[s.id].target = src.target;
+    });
+    save(); renderAll(); return toast('Önceki ay kopyalandı');
+  }
   const P = S.months[pk];
   if (!P || !P.some(r => r.some(c => c.length))) return toast('Önceki ayda veri yok');
   const mode = prompt('Önceki aydan nasıl kopyalansın?\n\n1 = Aynı gün numarasına (1→1, 2→2…)\n2 = Haftanın aynı gününe (ilk pazartesi → ilk pazartesi…)', '2');
@@ -883,6 +1320,24 @@ $('btnCopyPrev').onclick = () => {
     cols().forEach((_, c) => { row[c] = JSON.parse(JSON.stringify(PM[src][c] || [])); });
   });
   save(); renderAll(); toast('Önceki ay kopyalandı');
+};
+
+$('btnFillWeek').onclick = () => {
+  if (!isServis()) return;
+  if (!S.servis.staff.length) return toast('Önce personel ekle');
+  const h = S.servis.settings.defaultHours || 8;
+  const onlyEmpty = confirm(`Hafta içi boş günlere ${h} saat yazılsın mı?\n\nTamam = sadece boşlar\nİptal = işlem yapılmaz`);
+  if (!onlyEmpty) return;
+  snapshot();
+  const M = getServisMonth();
+  S.servis.staff.forEach(s => {
+    M[s.id].days.forEach((v, d) => {
+      const wd = dateOf(d).getDay();
+      if (wd === 0 || wd === 6) return;
+      if (v === '' || v == null) M[s.id].days[d] = String(h);
+    });
+  });
+  save(); renderAll(); toast(`Hafta içi boşlara ${h} yazıldı`);
 };
 
 /* ---------- Auto fill ---------- */
@@ -938,6 +1393,7 @@ $('btnAuto').onclick = () => {
 
 /* ---------- Settings ---------- */
 $('btnSettings').onclick = () => {
+  if (isServis()) return openServisSettings();
   const st = S.settings;
   const w = JSON.parse(JSON.stringify({ columns: st.columns, signatures: st.signatures }));
   const draw = () => {
@@ -1005,6 +1461,86 @@ $('btnSettings').onclick = () => {
   draw();
 };
 
+function openServisSettings() {
+  const st = S.servis.settings;
+  const w = JSON.parse(JSON.stringify({ signatures: st.signatures, codes: st.codes, hours: st.hours }));
+  const draw = () => {
+    openModal(`
+      <h2>⚙ Servis / Birim Ayarları</h2>
+      <div class="frow"><label>Üst başlık</label><textarea id="stHead" rows="3" style="flex:1">${esc(st.header)}</textarea></div>
+      <div class="frow"><label>Hastane</label><input type="text" id="stInst" value="${esc(st.institution)}"></div>
+      <div class="frow"><label>Başlık</label><input type="text" id="stTitle" value="${esc(st.title)}"></div>
+      <div class="frow"><label>Birim / Servis</label><input type="text" id="stUnit" value="${esc(st.unit)}" placeholder="Örn. DAHİLİYE"></div>
+      <div class="frow"><label>Logo</label><input type="file" id="stLogo" accept="image/*">${st.logo ? `<img src="${st.logo}" style="height:36px"><button class="sm danger" id="stLogoRm">Kaldır</button>` : ''}</div>
+      <div class="sec">
+        <h4>Varsayılanlar</h4>
+        <div class="frow"><label>Aylık hedef saat</label><input type="number" id="stTarget" value="${esc(st.defaultTarget)}" style="width:100px"></div>
+        <div class="frow"><label>Hafta içi saat</label><input type="number" id="stDefH" value="${esc(st.defaultHours)}" style="width:100px"></div>
+        <div class="frow"><label>Saat düğmeleri</label><input type="text" id="stHours" value="${esc(w.hours.join(', '))}" style="flex:1" placeholder="8, 16, 24"></div>
+      </div>
+      <div class="sec">
+        <h4>İzin / durum kodları</h4>
+        ${w.codes.map((c, i) => `
+          <div class="frow">
+            <input type="text" data-code="${i}" data-f="code" value="${esc(c.code)}" style="width:70px" placeholder="Yİ">
+            <input type="text" data-code="${i}" data-f="label" value="${esc(c.label)}" style="flex:1" placeholder="Açıklama">
+            <button class="sm danger" data-coderm="${i}">Sil</button>
+          </div>`).join('')}
+        <button class="sm" id="codeAdd">+ Kod ekle</button>
+      </div>
+      <div class="sec">
+        <h4>İmza alanları</h4>
+        ${w.signatures.map((s, i) => `
+          <div class="frow">
+            <input type="text" data-sig="${i}" data-f="title" value="${esc(s.title)}" placeholder="Unvan" style="flex:1">
+            <input type="text" data-sig="${i}" data-f="name" value="${esc(s.name)}" placeholder="Ad Soyad" style="flex:1">
+            <button class="sm danger" data-sigrm="${i}">Sil</button>
+          </div>`).join('')}
+        <button class="sm" id="sigAdd">+ İmza ekle</button>
+      </div>
+      <div class="sec">
+        <div class="frow"><label>Liste altı not</label><textarea id="stNote" rows="3" style="flex:1">${esc(st.note)}</textarea></div>
+        <div class="frow"><label>Hafta sonunu gölgele</label><input type="checkbox" id="stShade" ${st.shadeWeekend ? 'checked' : ''}></div>
+        <div class="frow"><label>Özeti 2. sayfa yazdır</label><input type="checkbox" id="stPS" ${st.printSummary ? 'checked' : ''}></div>
+      </div>
+      <div class="foot"><button id="stCancel">İptal</button><button class="primary" id="stSave">Kaydet</button></div>`);
+    const box = $('modalBox');
+    const keep = () => {
+      box.querySelectorAll('[data-sig]').forEach(el => w.signatures[+el.dataset.sig][el.dataset.f] = up(el.value));
+      box.querySelectorAll('[data-code]').forEach(el => {
+        const c = w.codes[+el.dataset.code];
+        c[el.dataset.f] = el.dataset.f === 'code' ? up(el.value) : el.value.trim();
+      });
+      st.header = $('stHead').value; st.institution = up($('stInst').value);
+      st.title = up($('stTitle').value); st.unit = up($('stUnit').value);
+      st.defaultTarget = Number($('stTarget').value) || 176;
+      st.defaultHours = Number($('stDefH').value) || 8;
+      w.hours = $('stHours').value.split(/[,;\s]+/).map(Number).filter(n => Number.isFinite(n) && n > 0);
+      st.note = $('stNote').value; st.shadeWeekend = $('stShade').checked; st.printSummary = $('stPS').checked;
+    };
+    box.querySelectorAll('[data-sigrm]').forEach(el => el.onclick = () => { keep(); w.signatures.splice(+el.dataset.sigrm, 1); draw(); });
+    box.querySelectorAll('[data-coderm]').forEach(el => el.onclick = () => { keep(); w.codes.splice(+el.dataset.coderm, 1); draw(); });
+    $('sigAdd').onclick = () => { keep(); w.signatures.push({ title: '', name: '' }); draw(); };
+    $('codeAdd').onclick = () => { keep(); w.codes.push({ code: '', label: '' }); draw(); };
+    $('stLogo').onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { keep(); st.logo = r.result; draw(); };
+      r.readAsDataURL(f);
+    };
+    if ($('stLogoRm')) $('stLogoRm').onclick = () => { keep(); st.logo = ''; draw(); };
+    $('stCancel').onclick = () => { S = load(); closeModal(); renderAll(); };
+    $('stSave').onclick = () => {
+      keep();
+      st.signatures = w.signatures;
+      st.codes = w.codes.filter(c => c.code);
+      st.hours = w.hours.length ? w.hours : [8, 16, 24];
+      save(); closeModal(); renderAll(); toast('Ayarlar kaydedildi');
+    };
+  };
+  draw();
+}
+
 /* ---------- Export / Import ---------- */
 $('btnExport').onclick = () => {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
@@ -1020,8 +1556,9 @@ $('importFile').onchange = e => {
   r.onload = () => {
     try {
       const d = JSON.parse(r.result);
-      if (!d.staff || !d.months) throw new Error('format');
-      if (!confirm('Mevcut verilerin yerine yedek yüklensin mi?')) return;      localStorage.setItem(STORE_KEY, JSON.stringify(d));
+      if (!d.months && !d.servis) throw new Error('format');
+      if (!confirm('Mevcut verilerin yerine yedek yüklensin mi?')) return;
+      localStorage.setItem(STORE_KEY, JSON.stringify(d));
       S = load(); history.length = 0; renderAll(); toast('Yedek yüklendi');
     } catch { alert('Geçersiz yedek dosyası.'); }
   };
@@ -1035,7 +1572,6 @@ const colKind = c => { const h = (minutes(c.start) / 60) % 24; return h >= 6 && 
 const KIND_NAME = { gunduz: 'Gündüz', aksam: 'Akşam', gece: 'Gece' };
 const colShort = c => KIND_NAME[colKind(cols()[c])] || colLabel(cols()[c]);
 const isWE = (d, k = S.cur) => [0, 6].includes(dateOf(d, k).getDay());
-const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
 function getPlan(k = S.cur) {
   S.plans ||= {};
@@ -1734,11 +2270,16 @@ function runGenerate() {
 
 /* ---------- Print ---------- */
 function doPrint() {
-  const { empty } = computeStats();
-  if (empty && !confirm(`${empty} boş vardiya var. Yine de yazdırılsın mı?`)) return;
+  if (!isServis()) {
+    const { empty } = computeStats();
+    if (empty && !confirm(`${empty} boş vardiya var. Yine de yazdırılsın mı?`)) return;
+  } else if (!S.servis.staff.length) {
+    return toast('Yazdırmadan önce personel ekle');
+  }
   const old = document.title;
   const [y, m] = ym();
-  document.title = `Nobet_Listesi_${y}-${String(m).padStart(2, '0')}`;
+  const tag = isServis() ? (S.servis.settings.unit || 'Servis') : 'Acil';
+  document.title = `Nobet_${tag}_${y}-${String(m).padStart(2, '0')}`;
   window.print();
   document.title = old;
 }
