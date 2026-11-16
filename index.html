@@ -144,7 +144,13 @@
   .dshort{display:none}
   .tablewrap{overflow-x:auto}
   .chip.addmode .nm{font-weight:500;font-size:12px}
-  .tplsel{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
+  .tpltabs{display:flex;gap:4px;background:#eef1f6;padding:3px;border-radius:10px}
+  .tpltab{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted)}
+  .tpltab.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  body[data-tpl=acil] .servis-only{display:none!important}
+  body[data-tpl=servis] .acil-only{display:none!important}
+  #valueBar{display:none;flex-direction:column;gap:4px;margin-bottom:10px}
+  body[data-tpl=servis] #valueBar{display:flex}
   body[data-tpl=servis] .sheet{width:297mm;min-height:210mm;padding:6mm}
   body[data-tpl=servis] table.grid{font-size:7.5pt;table-layout:fixed}
   body[data-tpl=servis] table.grid td,body[data-tpl=servis] table.grid th{padding:1px 1px;height:6mm}
@@ -177,13 +183,20 @@
     .main{order:1;overflow:visible}
     .side{order:2;position:static;max-height:none;overflow:visible}
     .side .card .hint{display:none}
+    .tpltabs{width:100%;order:-1}
+    .tpltab{flex:1;text-align:center;padding:9px 8px}
 
-    .palette{position:fixed;left:0;right:0;bottom:0;z-index:40;flex-direction:row;gap:6px;overflow-x:auto;
-      background:#fff;border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.08)}
-    .palette > .hint{display:none}
+    body[data-tpl=acil] .palette,
+    body[data-tpl=servis] #valueBar{position:fixed;left:0;right:0;bottom:0;z-index:40;flex-direction:row;gap:6px;overflow-x:auto;
+      background:#fff;border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.08);margin:0}
+    body[data-tpl=servis] .palette{position:static;flex-direction:column;overflow:visible;box-shadow:none;border:0;padding:0;background:transparent}
+    .palette > .hint,#valueBar > .hint{display:none}
     .chip{flex:none;padding:9px 12px}
     .chip .key,.chip .act{display:none!important}
     .chip .nm{white-space:nowrap}
+    body[data-tpl=servis] .palette .chip{width:100%}
+    body[data-tpl=servis] .palette .chip .act{display:flex!important}
+    body[data-tpl=servis] .palette .chip .nm{white-space:normal}
 
     .sheet{width:100%;min-height:0;padding:8px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
     body[data-tpl=servis] .main{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -239,17 +252,17 @@
 <body>
 
 <div class="topbar">
-  <h1>Nöbet Listesi</h1>
-  <select id="tpl" class="tplsel" title="Liste türü">
-    <option value="acil">Acil Servis</option>
-    <option value="servis">Servis / Birim</option>
-  </select>
+  <h1 id="appTitle">Nöbet Listesi</h1>
+  <div class="tpltabs" role="tablist" aria-label="Liste türü">
+    <button type="button" class="tpltab" data-tplbtn="acil" id="tabAcil">Acil Servis</button>
+    <button type="button" class="tpltab" data-tplbtn="servis" id="tabServis">Servis / Birim</button>
+  </div>
   <button id="prevM" title="Önceki ay">◀</button>
   <input type="month" id="month">
   <button id="nextM" title="Sonraki ay">▶</button>
   <button id="btnPlan" class="primary acil-only">📅 Akıllı Planla</button>
   <button id="btnAuto" class="acil-only">⚡ Sıralı Doldur</button>
-  <button id="btnFillWeek" class="servis-only" hidden>⚡ Hafta içi doldur</button>
+  <button id="btnFillWeek" class="servis-only">⚡ Hafta içi doldur</button>
   <button id="btnCopyPrev">Önceki Ayı Kopyala</button>
   <button id="btnUndo" title="Ctrl/Cmd + Z">↶ Geri Al</button>
   <button id="btnClear" class="danger">Ayı Temizle</button>
@@ -264,21 +277,22 @@
 <div class="layout">
   <aside class="side">
     <div class="card">
-      <h3>Personel</h3>
+      <h3 id="sideTitle">Personel</h3>
+      <div class="palette" id="valueBar" aria-label="Saat ve kodlar"></div>
       <div class="palette" id="palette"></div>
       <div class="addrow">
         <input type="text" id="newStaff" placeholder="Ad Soyad (virgülle birden fazla)">
         <button id="addStaff">Ekle</button>
       </div>
-      <div class="hint" id="hintAcil">
+      <div class="hint acil-only" id="hintAcil">
         • Kişiye tıkla, sonra tablodaki hücreye tıkla.<br>
         • Ya da ismi tutup tablodaki hücreye <b>sürükle</b>. Tablodaki bir ismi başka hücreye sürüklersen yer değiştirir, bu listeye geri sürüklersen silinir.<br>
         • Bir hücreye iki kişi yazmak için <b>Shift</b>'e basılı tutup tıkla.<br>
         • Yarım gün, özel saat gibi durumlar için hücreye <b>sağ tıkla</b>.<br>
         • Silmek için <b>Silgi</b>'yi seç, hücreye tıkla.
       </div>
-      <div class="hint" id="hintServis" hidden>
-        • Saat veya izin koduna tıkla, sonra tablodaki hücrelere tıkla / sürükle.<br>
+      <div class="hint servis-only" id="hintServis">
+        • Alttaki / soldaki saat veya izin koduna tıkla, sonra tablodaki hücrelere yaz.<br>
         • Özel değer için hücreye <b>sağ tıkla</b> veya <b>Özel…</b>'i seç.<br>
         • Personelde ✎ ile branş ve hedef saati düzenle.<br>
         • Silmek için <b>Silgi</b>'yi seç.
@@ -637,6 +651,7 @@ function updateCell(d, c) {
 
 function renderPalette() {
   if (isServis()) return renderServisPalette();
+  $('valueBar').innerHTML = '';
   const items = S.staff.map((s, i) => `
     <div class="chip ${brush === s.id ? 'active' : ''}" data-id="${s.id}">
       <span class="dot" style="background:${s.color}"></span>
@@ -661,21 +676,18 @@ function renderServisPalette() {
     { id: 'v:custom', label: 'Özel…', cls: 'val' },
     { id: 'erase', label: 'Silgi', cls: 'erase' },
   ];
-  const valueChips = vals.map(v => `
+  $('valueBar').innerHTML = vals.map(v => `
     <div class="chip ${v.cls} ${brush === v.id ? 'active' : ''}" data-id="${v.id}" title="${esc(v.title || v.label)}">
       ${v.id === 'erase' ? '<span class="dot"></span>' : ''}
       <span class="nm">${esc(v.label)}</span>
     </div>`).join('');
-  const people = S.servis.staff.map((s, i) => `
+  const people = S.servis.staff.map(s => `
     <div class="chip" data-id="${s.id}" data-person="1">
       <span class="dot" style="background:${s.color}"></span>
       <span class="nm">${esc(s.name)}${s.branch ? ` <span style="color:var(--muted);font-weight:500">· ${esc(s.branch)}</span>` : ''}</span>
       <span class="act"><span data-act="edit" title="Düzenle">✎</span><span data-act="col" title="Renk">●</span><span data-act="del" title="Sil">✕</span></span>
     </div>`).join('');
-  $('palette').innerHTML =
-    '<div class="hint" style="margin:0 0 6px">Değer seç, hücreye yaz</div>' + valueChips +
-    '<div class="hint" style="margin:10px 0 6px">Personel</div>' +
-    (people || '<div class="hint" style="margin:0">Henüz personel yok. Aşağıya ad yazıp Ekle.</div>');
+  $('palette').innerHTML = people || '<div class="hint" style="margin:0">Henüz personel yok. Aşağıya ad yazıp Ekle.</div>';
 }
 
 function computeStats(k = S.cur) {
@@ -771,14 +783,23 @@ function seedMonth(k = S.cur) {
   save();
 }
 
+function setTpl(tpl) {
+  const next = tpl === 'servis' ? 'servis' : 'acil';
+  if (S.tpl === next) return;
+  brush = null; addMode = false; history.length = 0;
+  S.tpl = next;
+  save();
+  renderAll();
+  toast(S.tpl === 'servis' ? 'Servis / Birim formu' : 'Acil Servis formu');
+}
+
 function renderAll() {
   S.tpl = S.tpl === 'servis' ? 'servis' : 'acil';
   document.body.dataset.tpl = S.tpl;
-  $('tpl').value = S.tpl;
-  document.querySelectorAll('.acil-only').forEach(el => { el.hidden = isServis(); });
-  document.querySelectorAll('.servis-only').forEach(el => { el.hidden = !isServis(); });
-  if ($('hintAcil')) $('hintAcil').hidden = isServis();
-  if ($('hintServis')) $('hintServis').hidden = !isServis();
+  $('tabAcil').classList.toggle('active', !isServis());
+  $('tabServis').classList.toggle('active', isServis());
+  $('appTitle').textContent = isServis() ? 'Servis / Birim Nöbet Listesi' : 'Acil Servis Nöbet Listesi';
+  $('sideTitle').textContent = isServis() ? 'Değerler ve Personel' : 'Personel';
   if (!isServis()) seedMonth();
   else getServisMonth();
   $('month').value = S.cur;
@@ -869,7 +890,7 @@ let pend = null, drag = null, dragXY = null, dragRAF = 0, suppressClick = false;
 
 function dragSource(t) {
   if (isServis()) {
-    const chip = t.closest('#palette .chip');
+    const chip = t.closest('#valueBar .chip');
     if (chip && String(chip.dataset.id || '').startsWith('v:') && chip.dataset.id !== 'v:custom' && !t.closest('.act'))
       return { kind: 'schip', val: chip.dataset.id.slice(2), label: chip.querySelector('.nm')?.textContent || chip.dataset.id.slice(2) };
     const td = t.closest('td.cell[data-sid]');
@@ -909,7 +930,9 @@ function dropTarget(x, y) {
   if (!el) return null;
   const td = el.closest('td.cell');
   if (td) return td;
-  return drag.kind === 'cell' && el.closest('#palette') ? $('palette') : null;
+  if (drag.kind === 'cell' && el.closest('#palette')) return $('palette');
+  if (drag.kind === 'scell' && (el.closest('#valueBar') || el.closest('#palette'))) return $('valueBar');
+  return null;
 }
 
 function moveDrag(x, y) {
@@ -941,13 +964,13 @@ function endDrag(x, y, add) {
   suppressClick = true; setTimeout(() => suppressClick = false, 0);
   if (!t) return;
   if (src.kind === 'schip' || src.kind === 'scell') {
-    if (t.id === 'palette') {
-      if (src.kind !== 'scell') return;
-      snapshot();
-      getServisMonth()[src.sid].days[src.d] = '';
-      save(); renderAll();
-      return toast('Değer silindi');
-    }
+  if (t.id === 'palette' || t.id === 'valueBar') {
+    if (src.kind !== 'scell') return;
+    snapshot();
+    getServisMonth()[src.sid].days[src.d] = '';
+    save(); renderAll();
+    return toast('Değer silindi');
+  }
     const sid = t.dataset.sid, d = +t.dataset.d;
     if (!sid) return;
     if (src.kind === 'scell' && src.sid === sid && src.d === d) return;
@@ -1181,7 +1204,7 @@ function openServisPersonEditor(s) {
 }
 
 /* ---------- Staff management ---------- */
-$('palette').addEventListener('click', e => {
+function onPaletteClick(e) {
   const chip = e.target.closest('.chip');
   if (!chip) return;
   const id = chip.dataset.id, act = e.target.dataset.act;
@@ -1226,7 +1249,10 @@ $('palette').addEventListener('click', e => {
   if (id === 'addmode') { addMode = !addMode; return renderPalette(); }
   brush = brush === id ? null : id;
   renderPalette();
-});
+}
+$('palette').addEventListener('click', onPaletteClick);
+$('valueBar').addEventListener('click', onPaletteClick);
+
 function addStaff() {
   const names = $('newStaff').value.split(',').map(up).filter(Boolean);
   if (!names.length) return;
@@ -1270,12 +1296,9 @@ $('month').addEventListener('change', e => { if (e.target.value) { S.cur = e.tar
 $('prevM').onclick = () => { S.cur = shiftMonth(S.cur, -1); save(); renderAll(); };
 $('nextM').onclick = () => { S.cur = shiftMonth(S.cur, 1); save(); renderAll(); };
 
-$('tpl').onchange = e => {
-  S.tpl = e.target.value === 'servis' ? 'servis' : 'acil';
-  brush = null; addMode = false; history.length = 0;
-  save(); renderAll();
-  toast(S.tpl === 'servis' ? 'Servis / Birim formu' : 'Acil Servis formu');
-};
+document.querySelectorAll('[data-tplbtn]').forEach(btn => {
+  btn.onclick = () => setTpl(btn.dataset.tplbtn);
+});
 
 $('btnUndo').onclick = undo;
 $('btnClear').onclick = () => {
